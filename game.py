@@ -1,50 +1,45 @@
-# game.py
-
 import pygame
 from board import Board
 from computerPlayer import ComputerPlayer
 
 class Game:
-    def __init__(self, window, num_players, players_type):
-        self.window = window
+    def __init__(self, window, num_players, players_type, board_size):
         self.num_players = num_players
         self.players_type = players_type
-        self.computer_players = []  # List to hold the AI players
-        self.current_turn = 0  # To track which player's turn it is (index 0 to num_players - 1)
+        self.board_size = board_size
+        self.grid_size = 80 if board_size == 8 else (50 if board_size == 12 else 40)
+        self.window_size = self.grid_size * self.board_size + 100  # Dynamic window size
+
+        self.window = pygame.display.set_mode((self.window_size, self.window_size))
+        pygame.display.set_caption(f"Lines of Action - {self.board_size}x{self.board_size}")
         self.reset_game()
 
     def reset_game(self):
-        self.board = Board()
+        self.board = Board(self.board_size)
+        self.current_turn = 0  # Track the turn using an index
         self.selected_piece = None
-        self.error_message = ""  # To store error messages
-        self.move_history = []  # List to store move history
+        self.error_message = ""
+        self.move_history = []
         self.history_font = pygame.font.SysFont('Arial', 20)
-        self.history_box_height = 150  # Height of the move history box
-        self.history_offset = 10  # Padding within the history box
-        self.show_history_button_rect = pygame.Rect(650, 20, 140, 50)  # Button to show move history
-        self.winner_displayed = False  # Track if the winner has been displayed
+        self.history_box_height = 150
+        self.history_offset = 10
+        self.show_history_button_rect = pygame.Rect(650, 20, 140, 50)
+        self.winner_displayed = False
 
-        # Initialize AI players if any
-        self.computer_players = []
+        # Initialize the players list
+        self.players = []
         for i, player_type in enumerate(self.players_type):
             if player_type == "Computer":
-                color = "white" if i % 2 != 0 else "black"
-                self.computer_players.append(ComputerPlayer(self.board, color))
+                self.players.append(ComputerPlayer(self.board, (255, 255, 255)))  # For now, AI is always white
             else:
-                self.computer_players.append(None)  # No AI for human players
+                self.players.append(None)  # Human players can be represented by None or another class if needed
 
     def update(self):
-        self.window.fill((255, 255, 255))  # Fill the screen with white
-        self.board.draw(self.window, self.selected_piece)  # Draw the board and pieces
+        self.window.fill((255, 255, 255))
+        self.board.draw(self.window, self.selected_piece)
         self.display_error_message()
         self.display_show_history_button()
 
-        # Check if the current player is an AI, and make the AI move
-        if isinstance(self.computer_players[self.current_turn], ComputerPlayer):
-            self.computer_players[self.current_turn].make_move()
-            self.end_turn()
-
-        # Check for a winner
         if not self.winner_displayed:
             self.check_winner()
 
@@ -105,7 +100,6 @@ class Game:
             self.display_winner("White")
 
     def display_winner(self, color):
-        # Create a popup window to display the winner
         popup_width, popup_height = 300, 200
         popup_window = pygame.display.set_mode((popup_width, popup_height))
         pygame.display.set_caption("Game Over")
@@ -126,11 +120,9 @@ class Game:
             popup_window.blit(text_surface, text_rect)
             pygame.display.flip()
 
-        # Ask if the player wants to play again
         self.ask_replay()
 
     def ask_replay(self):
-        # Create a popup window to ask for replay
         popup_width, popup_height = 400, 200
         popup_window = pygame.display.set_mode((popup_width, popup_height))
         pygame.display.set_caption("Play Again?")
@@ -139,7 +131,6 @@ class Game:
         prompt_surface = font.render("Play Again?", True, (0, 0, 0))
         prompt_rect = prompt_surface.get_rect(center=(popup_width // 2, popup_height // 2 - 30))
 
-        # Define Yes/No buttons
         yes_button_rect = pygame.Rect(popup_width // 2 - 60, popup_height // 2 + 20, 50, 30)
         no_button_rect = pygame.Rect(popup_width // 2 + 10, popup_height // 2 + 20, 50, 30)
 
@@ -160,9 +151,8 @@ class Game:
             popup_window.fill((240, 240, 240))
             popup_window.blit(prompt_surface, prompt_rect)
 
-            # Draw Yes/No buttons
-            pygame.draw.rect(popup_window, (0, 255, 0), yes_button_rect)  # Green for Yes
-            pygame.draw.rect(popup_window, (255, 0, 0), no_button_rect)  # Red for No
+            pygame.draw.rect(popup_window, (0, 255, 0), yes_button_rect)
+            pygame.draw.rect(popup_window, (255, 0, 0), no_button_rect)
 
             yes_text = font.render("Yes", True, (0, 0, 0))
             no_text = font.render("No", True, (0, 0, 0))
@@ -172,7 +162,6 @@ class Game:
 
             pygame.display.flip()
 
-        # Restore the main game window after the popup is closed
         self.window = pygame.display.set_mode((800, 800))
 
     def get_row_col_from_mouse(self, pos):
@@ -180,14 +169,12 @@ class Game:
         board_offset = self.board.offset
         grid_size = self.board.grid_size
 
-        # Adjust for the offset
         if x < board_offset or y < board_offset:
-            return None, None  # Click is outside the board grid
+            return None, None
 
         row = (y - board_offset) // grid_size
         col = (x - board_offset) // grid_size
 
-        # Ensure the click is within the bounds of the board
         if 0 <= row < self.board.rows and 0 <= col < self.board.cols:
             return row, col
         return None, None
@@ -196,7 +183,7 @@ class Game:
         piece = self.board.get_piece(row, col)
         if piece and self.is_correct_turn(piece):
             self.selected_piece = piece
-            self.error_message = ""  # Clear error message when a piece is successfully selected
+            self.error_message = ""
 
     def move_piece(self, row, col):
         if self.selected_piece:
@@ -205,18 +192,21 @@ class Game:
 
             is_valid, message = self.board.is_valid_move(self.selected_piece, row, col)
             if is_valid:
-                self.add_to_move_history(self.selected_piece, start_row, start_col, row,
-                                         col)  # Add the move to history before moving the piece
+                self.add_to_move_history(self.selected_piece, start_row, start_col, row, col)
                 self.board.move_piece(self.selected_piece, row, col)
                 self.end_turn()
-                self.error_message = ""  # Clear error message on a successful move
+
+                # If the next player is a computer, let the AI make a move
+                if isinstance(self.players[self.current_turn], ComputerPlayer):
+                    self.players[self.current_turn].make_move()
+                    self.end_turn()
             else:
                 self.error_message = message
-                self.selected_piece = None  # Deselect piece on invalid move
+                self.selected_piece = None
 
     def end_turn(self):
         self.selected_piece = None
-        self.current_turn = (self.current_turn + 1) % self.num_players  # Rotate to the next player
+        self.current_turn = (self.current_turn + 1) % self.num_players
 
     def is_correct_turn(self, piece):
         piece_color = (0, 0, 0) if self.current_turn % 2 == 0 else (255, 255, 255)
@@ -228,7 +218,6 @@ class Game:
         move = f"{start_notation} to {end_notation}"
         self.move_history.append(move)
 
-        # Auto-scroll down to the latest move
         total_height = len(self.move_history) * (self.history_font.get_height() + 5)
         visible_height = self.history_box_height - 2 * self.history_offset
         if total_height > visible_height:

@@ -1,42 +1,42 @@
-# main.py
-
 import pygame
-from game import Game
 from menu import Menu
+from game import Game
 
 def main():
     pygame.init()
     window = pygame.display.set_mode((800, 800))
     pygame.display.set_caption("Lines of Action")
 
+    # Initialize the menu and display it
     menu = Menu(window)
-    game = None
 
     running = True
-    in_menu = True
-
-    ##hello world
-
     while running:
+        menu.display()
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Left mouse button
-                if in_menu:
-                    menu.handle_click(event.pos)
-                    if menu.start_game():  # Check if the game should start
-                        in_menu = False
-                        # Now we can start the game with the chosen players
-                        game = Game(window, menu.num_players, menu.players_type)
-                elif game:
-                    game.handle_click(event.pos)
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                menu.handle_click(event.pos)
 
-        if in_menu:
-            menu.display()
-        elif game:
-            game.update()
+        # Check if the game should start
+        if menu.start_game():
+            game = Game(window, menu.num_players, menu.players_type, menu.board_size)  # Pass the board size here
+            running = False
 
-        pygame.display.flip()
+    # Now start the game loop
+    game_running = True
+    while game_running:
+        game.update()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                game_running = False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                game.handle_click(event.pos)
+
+        pygame.display.update()
 
     pygame.quit()
 
