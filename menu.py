@@ -7,10 +7,9 @@ class Menu:
         self.title_font = pygame.font.SysFont('Arial', 40)
         self.num_players = None  # Store the number of players
         self.players_type = []  # Store whether each player is Human or Computer
-        self.board_size = None  # Store the board size
+        self.board_size = None  # Store selected board size
 
-        self.start_button_rect = pygame.Rect(300, 400, 200, 50)  # Start button
-        self.selection_phase = "num_players"  # To track the phase of selection ("num_players" or "player_type")
+        self.selection_phase = "num_players"  # To track the phase of selection
         self.transition_to_game = False  # Track when to transition to the game
 
     def display(self):
@@ -31,27 +30,46 @@ class Menu:
         pygame.display.flip()
 
     def display_num_players_selection(self):
+        # Prompt to ask for number of players (2 or 4)
         prompt_surface = self.font.render("How many players? (2 or 4)", True, (0, 0, 0))
         prompt_rect = prompt_surface.get_rect(center=(400, 200))
         self.window.blit(prompt_surface, prompt_rect)
 
-        for i in [2, 4]:
-            option_surface = self.font.render(str(i), True, (0, 0, 0))
-            option_rect = pygame.Rect(300 + (i - 2) * 200, 250, 50, 50)
+        # Display options for players (2 or 4 players)
+        for i, num in enumerate([2, 4]):
+            option_surface = self.font.render(str(num), True, (0, 0, 0))
+            option_rect = pygame.Rect(300 + i * 100, 250, 50, 50)
+            pygame.draw.rect(self.window, (0, 0, 255), option_rect)
+            option_surface_rect = option_surface.get_rect(center=option_rect.center)
+            self.window.blit(option_surface, option_surface_rect)
+
+    def display_board_size_selection(self):
+        # Prompt to ask for board size
+        prompt_surface = self.font.render("Select board size:", True, (0, 0, 0))
+        prompt_rect = prompt_surface.get_rect(center=(400, 200))
+        self.window.blit(prompt_surface, prompt_rect)
+
+        # Display options for board size (8x8 only for 2 players, 12x12 or 16x16 for 4 players)
+        sizes = [8, 12, 16] if self.num_players == 4 else [8]
+        for i, size in enumerate(sizes):
+            option_surface = self.font.render(f"{size} x {size}", True, (0, 0, 0))
+            option_rect = pygame.Rect(300 + i * 100, 250, 100, 50)
             pygame.draw.rect(self.window, (0, 0, 255), option_rect)
             option_surface_rect = option_surface.get_rect(center=option_rect.center)
             self.window.blit(option_surface, option_surface_rect)
 
     def display_player_type_selection(self):
+        # Prompt to ask if the player is human or computer
         current_player = len(self.players_type) + 1
         if current_player > self.num_players:
-            self.selection_phase = "board_size"
+            self.selection_phase = "board_size"  # Move to board size selection phase
             return
 
         prompt_surface = self.font.render(f"Is Player {current_player} human or computer?", True, (0, 0, 0))
         prompt_rect = prompt_surface.get_rect(center=(400, 200))
         self.window.blit(prompt_surface, prompt_rect)
 
+        # Human and Computer buttons
         human_button_rect = pygame.Rect(250, 250, 150, 50)
         computer_button_rect = pygame.Rect(450, 250, 150, 50)
 
@@ -64,32 +82,20 @@ class Menu:
         self.window.blit(human_surface, human_button_rect.move(20, 10))
         self.window.blit(computer_surface, computer_button_rect.move(10, 10))
 
-    def display_board_size_selection(self):
-        prompt_surface = self.font.render("Select board size (8, 12, or 16):", True, (0, 0, 0))
-        prompt_rect = prompt_surface.get_rect(center=(400, 200))
-        self.window.blit(prompt_surface, prompt_rect)
-
-        for i, size in enumerate([8, 12, 16]):
-            option_surface = self.font.render(str(size), True, (0, 0, 0))
-            option_rect = pygame.Rect(250 + i * 100, 250, 50, 50)
-            pygame.draw.rect(self.window, (0, 0, 255), option_rect)
-            option_surface_rect = option_surface.get_rect(center=option_rect.center)
-            self.window.blit(option_surface, option_surface_rect)
-
     def handle_click(self, pos):
         if self.selection_phase == "num_players":
             self.handle_num_players_click(pos)
-        elif self.selection_phase == "player_type":
+        elif self.selection_phase == "player_type" and not self.transition_to_game:
             self.handle_player_type_click(pos)
         elif self.selection_phase == "board_size":
             self.handle_board_size_click(pos)
 
     def handle_num_players_click(self, pos):
-        for i in [2, 4]:
-            option_rect = pygame.Rect(300 + (i - 2) * 200, 250, 50, 50)
+        for i, num in enumerate([2, 4]):
+            option_rect = pygame.Rect(300 + i * 100, 250, 50, 50)
             if option_rect.collidepoint(pos):
-                self.num_players = i
-                self.selection_phase = "player_type"
+                self.num_players = num
+                self.selection_phase = "player_type"  # Move to player type selection
 
     def handle_player_type_click(self, pos):
         human_button_rect = pygame.Rect(250, 250, 150, 50)
@@ -100,15 +106,17 @@ class Menu:
         elif computer_button_rect.collidepoint(pos):
             self.players_type.append("Computer")
 
+        # Move to the next player or start the game
         if len(self.players_type) >= self.num_players:
             self.selection_phase = "board_size"
 
     def handle_board_size_click(self, pos):
-        for i, size in enumerate([8, 12, 16]):
-            option_rect = pygame.Rect(250 + i * 100, 250, 50, 50)
+        sizes = [8, 12, 16] if self.num_players == 4 else [8]
+        for i, size in enumerate(sizes):
+            option_rect = pygame.Rect(300 + i * 100, 250, 100, 50)
             if option_rect.collidepoint(pos):
                 self.board_size = size
-                self.transition_to_game = True
+                self.transition_to_game = True  # All selections complete, ready to transition
 
     def start_game(self):
         return self.transition_to_game

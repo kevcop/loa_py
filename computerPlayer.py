@@ -1,5 +1,3 @@
-# computerPlayer.py
-
 import random
 from board import Board
 
@@ -12,13 +10,14 @@ index_to_col = {
 class ComputerPlayer:
     def __init__(self, board, color=(255, 255, 255)):  # Add color as an argument with default white
         self.board = board
-        self.color = (255, 255, 255)
+        self.color = color  # Use the passed color
         self.possible_moves = []
 
+    # Update the column mapping to handle more columns, supporting up to 16 columns
     def proper_notation(self, position):
         col, row = position
-        column_letter = index_to_col[col]
-        row_number = row + 1  # Adjusting for 1-based index
+        column_letter = chr(65 + col)  # Convert column index to A, B, C, etc., dynamically for larger boards
+        row_number = row + 1  # Adjust for 1-based row index
         return f"{column_letter}{row_number}"
 
     def generate_all_possible_moves(self):
@@ -26,8 +25,8 @@ class ComputerPlayer:
         print(f"Generating moves for color: {self.color}")
 
         # Iterate through all pieces on the board
-        for row in range(8):
-            for col in range(8):
+        for row in range(self.board.rows):
+            for col in range(self.board.cols):
                 piece = self.board.get_piece(row, col)
 
                 if piece:  # Only proceed if a piece exists
@@ -35,7 +34,7 @@ class ComputerPlayer:
 
                     # Check if the piece matches the AI's color
                     print(f"piece color is {piece.color}")
-                    print(f"self color is{self.color}")
+                    print(f"self color is {self.color}")
                     if piece.color == self.color:
                         self.generate_moves_for_piece(row, col)
                 else:
@@ -71,7 +70,7 @@ class ComputerPlayer:
             self.add_move_if_valid(start_row, start_col, start_row - offset, start_col + offset)  # Top-right
 
     def add_move_if_valid(self, start_row, start_col, end_row, end_col):
-        if 0 <= end_row < 8 and 0 <= end_col < 8:
+        if 0 <= end_row < self.board.rows and 0 <= end_col < self.board.cols:
             print(f"Checking move from {self.proper_notation((start_col, start_row))} to {self.proper_notation((end_col, end_row))}")
             is_valid, captures = self.validate_move(start_row, start_col, end_row, end_col)
             if is_valid:

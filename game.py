@@ -1,47 +1,65 @@
 import pygame
 from board import Board
-from computerPlayer import ComputerPlayer
+from computerPlayer import ComputerPlayer  # AI class
 
 class Game:
     def __init__(self, window, num_players, players_type, board_size):
+        self.window = window
         self.num_players = num_players
         self.players_type = players_type
         self.board_size = board_size
-        self.grid_size = 80 if board_size == 8 else (50 if board_size == 12 else 40)
-        self.window_size = self.grid_size * self.board_size + 100  # Dynamic window size
+        self.current_turn = 0  # Start with player 1's turn
+        self.selected_piece = None
+        self.error_message = ""  # To store error messages
+        self.move_history = []  # List to store move history
+        self.history_font = pygame.font.SysFont('Arial', 20)
+        self.history_box_height = 150  # Height of the move history box
+        self.history_offset = 10  # Padding within the history box
+        self.show_history_button_rect = pygame.Rect(650, 20, 140, 50)  # Button to show move history
+        self.winner_displayed = False  # Track if the winner has been displayed
+        self.players = []  # List to store the players (Human or AI)
 
-        self.window = pygame.display.set_mode((self.window_size, self.window_size))
-        pygame.display.set_caption(f"Lines of Action - {self.board_size}x{self.board_size}")
+        # Initialize the game
         self.reset_game()
 
     def reset_game(self):
         self.board = Board(self.board_size)
-        self.current_turn = 0  # Track the turn using an index
+        self.current_turn = 0  # Reset to player 1
         self.selected_piece = None
         self.error_message = ""
         self.move_history = []
-        self.history_font = pygame.font.SysFont('Arial', 20)
-        self.history_box_height = 150
-        self.history_offset = 10
-        self.show_history_button_rect = pygame.Rect(650, 20, 140, 50)
-        self.winner_displayed = False
+        self.players = self.create_players()
 
-        # Initialize the players list
-        self.players = []
-        for i, player_type in enumerate(self.players_type):
-            if player_type == "Computer":
-                self.players.append(ComputerPlayer(self.board, (255, 255, 255)))  # For now, AI is always white
+    def create_players(self):
+        players = []
+        # Set up colors for up to 4 players
+        colors = [(0, 0, 0), (255, 255, 255)]  # Black and White for 2 players
+        if self.num_players == 4:
+            colors = [(0, 0, 0), (255, 255, 255), (255, 0, 0), (0, 255, 0)]  # Black, White, Red, Green
+
+        # Assign players (either Human or Computer) for each color
+        for i in range(self.num_players):
+            if self.players_type[i] == "Computer":
+                players.append(ComputerPlayer(self.board, colors[i]))  # AI player
             else:
-                self.players.append(None)  # Human players can be represented by None or another class if needed
+                players.append(None)  # Human player (we handle human moves manually)
+
+        return players
 
     def update(self):
-        self.window.fill((255, 255, 255))
-        self.board.draw(self.window, self.selected_piece)
+        self.window.fill((255, 255, 255))  # Fill the screen with white
+        self.board.draw(self.window, self.selected_piece)  # Draw the board and pieces
         self.display_error_message()
         self.display_show_history_button()
 
+        # Check for a winner
         if not self.winner_displayed:
             self.check_winner()
+
+        # If it's an AI's turn, make the move
+        if isinstance(self.players[self.current_turn], ComputerPlayer):
+            self.players[self.current_turn].make_move()
+            self.end_turn()  # Move to the next player after the AI move
 
     def display_error_message(self):
         if self.error_message:
@@ -94,10 +112,13 @@ class Game:
         self.window = pygame.display.set_mode((800, 800))
 
     def check_winner(self):
-        if self.board.check_connected_group((0, 0, 0)):
-            self.display_winner("Black")
-        elif self.board.check_connected_group((255, 255, 255)):
-            self.display_winner("White")
+        colors = [(0, 0, 0), (255, 255, 255)]  # Black and White for 2 players
+        if self.num_players == 4:
+            colors = [(0, 0, 0), (255, 255, 255), (255, 0, 0), (0, 255, 0)]  # Black, White, Red, Green
+
+        for color in colors:
+            if self.board.check_connected_group(color):
+                self.display_winner(color)
 
     def display_winner(self, color):
         popup_width, popup_height = 300, 200
@@ -105,7 +126,8 @@ class Game:
         pygame.display.set_caption("Game Over")
 
         font = pygame.font.SysFont('Arial', 30)
-        text_surface = font.render(f"{color} Wins!", True, (0, 0, 0))
+        color_name = self.get_color_name(color)
+        text_surface = font.render(f"{color_name} Wins!", True, (0, 0, 0))
         text_rect = text_surface.get_rect(center=(popup_width // 2, popup_height // 2))
 
         running = True
@@ -146,13 +168,13 @@ class Game:
                         running = False
                     elif no_button_rect.collidepoint(event.pos):
                         pygame.quit()
-                        exit()  # Exit the game if "No" is pressed
+                        exit()
 
             popup_window.fill((240, 240, 240))
             popup_window.blit(prompt_surface, prompt_rect)
 
-            pygame.draw.rect(popup_window, (0, 255, 0), yes_button_rect)
-            pygame.draw.rect(popup_window, (255, 0, 0), no_button_rect)
+            pygame.draw.rect(popup_window, (0, 255, 0), yes_button_rect)  # Green for Yes
+            pygame.draw.rect(popup_window, (255, 0, 0), no_button_rect)  # Red for No
 
             yes_text = font.render("Yes", True, (0, 0, 0))
             no_text = font.render("No", True, (0, 0, 0))
@@ -183,7 +205,7 @@ class Game:
         piece = self.board.get_piece(row, col)
         if piece and self.is_correct_turn(piece):
             self.selected_piece = piece
-            self.error_message = ""
+            self.error_message = ""  # Clear error message when a piece is successfully selected
 
     def move_piece(self, row, col):
         if self.selected_piece:
@@ -195,11 +217,8 @@ class Game:
                 self.add_to_move_history(self.selected_piece, start_row, start_col, row, col)
                 self.board.move_piece(self.selected_piece, row, col)
                 self.end_turn()
+                self.error_message = ""
 
-                # If the next player is a computer, let the AI make a move
-                if isinstance(self.players[self.current_turn], ComputerPlayer):
-                    self.players[self.current_turn].make_move()
-                    self.end_turn()
             else:
                 self.error_message = message
                 self.selected_piece = None
@@ -209,8 +228,10 @@ class Game:
         self.current_turn = (self.current_turn + 1) % self.num_players
 
     def is_correct_turn(self, piece):
-        piece_color = (0, 0, 0) if self.current_turn % 2 == 0 else (255, 255, 255)
-        return piece.color == piece_color
+        player_colors = [(0, 0, 0), (255, 255, 255)]
+        if self.num_players == 4:
+            player_colors = [(0, 0, 0), (255, 255, 255), (255, 0, 0), (0, 255, 0)]
+        return piece.color == player_colors[self.current_turn]
 
     def add_to_move_history(self, piece, start_row, start_col, end_row, end_col):
         start_notation = self.board.get_position_notation(start_row, start_col)
@@ -218,7 +239,12 @@ class Game:
         move = f"{start_notation} to {end_notation}"
         self.move_history.append(move)
 
-        total_height = len(self.move_history) * (self.history_font.get_height() + 5)
-        visible_height = self.history_box_height - 2 * self.history_offset
-        if total_height > visible_height:
-            self.history_scroll_offset = total_height - visible_height
+    def get_color_name(self, color):
+        if color == (0, 0, 0):
+            return "Black"
+        elif color == (255, 255, 255):
+            return "White"
+        elif color == (255, 0, 0):
+            return "Red"
+        elif color == (0, 255, 0):
+            return "Green"
