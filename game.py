@@ -3,12 +3,13 @@ from board import Board
 from computerPlayer import ComputerPlayer  # AI class
 
 class Game:
-    def __init__(self, window, num_players, players_type, board_size):
+    def __init__(self, window, num_players, players_type, board_size, player_color, computer_color):
         self.window = window
         self.num_players = num_players
         self.players_type = players_type
         self.board_size = board_size
-        self.current_turn = 0  # Start with player 1's turn
+        self.player_color = player_color
+        self.computer_color = computer_color
         self.selected_piece = None
         self.error_message = ""  # To store error messages
         self.move_history = []  # List to store move history
@@ -24,20 +25,23 @@ class Game:
 
     def reset_game(self):
         self.board = Board(self.board_size)
-        self.current_turn = 0  # Reset to player 1
         self.selected_piece = None
         self.error_message = ""
         self.move_history = []
         self.players = self.create_players()
 
+        # Check which color the player controls. If black, the player moves first; otherwise, the computer moves first.
+        if self.player_color == (0, 0, 0):  # Black
+            self.current_turn = 0  # Player moves first
+        else:
+            self.current_turn = 1  # Computer moves first
+
+
     def create_players(self):
         players = []
-        # Set up colors for up to 4 players
-        colors = [(0, 0, 0), (255, 255, 255)]  # Black and White for 2 players
-        if self.num_players == 4:
-            colors = [(0, 0, 0), (255, 255, 255), (255, 0, 0), (0, 255, 0)]  # Black, White, Red, Green
+        # Assign player and computer colors based on the coin toss result
+        colors = [self.player_color, self.computer_color]
 
-        # Assign players (either Human or Computer) for each color
         for i in range(self.num_players):
             if self.players_type[i] == "Computer":
                 players.append(ComputerPlayer(self.board, colors[i]))  # AI player
@@ -112,9 +116,7 @@ class Game:
         self.window = pygame.display.set_mode((800, 800))
 
     def check_winner(self):
-        colors = [(0, 0, 0), (255, 255, 255)]  # Black and White for 2 players
-        if self.num_players == 4:
-            colors = [(0, 0, 0), (255, 255, 255), (255, 0, 0), (0, 255, 0)]  # Black, White, Red, Green
+        colors = [self.player_color, self.computer_color]
 
         for color in colors:
             if self.board.check_connected_group(color):
@@ -228,10 +230,8 @@ class Game:
         self.current_turn = (self.current_turn + 1) % self.num_players
 
     def is_correct_turn(self, piece):
-        player_colors = [(0, 0, 0), (255, 255, 255)]
-        if self.num_players == 4:
-            player_colors = [(0, 0, 0), (255, 255, 255), (255, 0, 0), (0, 255, 0)]
-        return piece.color == player_colors[self.current_turn]
+        # Check if it's the correct player's turn
+        return piece.color == self.player_color if self.current_turn == 0 else piece.color == self.computer_color
 
     def add_to_move_history(self, piece, start_row, start_col, end_row, end_col):
         start_notation = self.board.get_position_notation(start_row, start_col)
@@ -244,7 +244,3 @@ class Game:
             return "Black"
         elif color == (255, 255, 255):
             return "White"
-        elif color == (255, 0, 0):
-            return "Red"
-        elif color == (0, 255, 0):
-            return "Green"

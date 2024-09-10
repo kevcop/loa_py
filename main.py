@@ -22,7 +22,8 @@ def main():
 
         # Check if the game should start
         if menu.start_game():
-            game = Game(window, menu.num_players, menu.players_type, menu.board_size)  # Pass the board size here
+            # Pass player and computer colors along with other parameters
+            game = Game(window, menu.num_players, menu.players_type, menu.board_size, menu.player_color, menu.computer_color)
             running = False
 
     # Now start the game loop

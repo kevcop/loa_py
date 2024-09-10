@@ -1,4 +1,5 @@
 import pygame
+import random
 
 class Menu:
     def __init__(self, window):
@@ -8,9 +9,14 @@ class Menu:
         self.num_players = None  # Store the number of players
         self.players_type = []  # Store whether each player is Human or Computer
         self.board_size = None  # Store selected board size
+        self.player_color = None  # To store the color assigned to the player
+        self.computer_color = None  # To store the color assigned to the computer
 
         self.selection_phase = "num_players"  # To track the phase of selection
         self.transition_to_game = False  # Track when to transition to the game
+        self.coin_flipping = False  # Track if the coin is flipping
+        self.user_choice = None  # Store user's heads or tails selection
+        self.coin_flip_result = None  # Store the final coin flip result
 
     def display(self):
         self.window.fill((240, 240, 240))
@@ -26,6 +32,8 @@ class Menu:
             self.display_player_type_selection()
         elif self.selection_phase == "board_size":
             self.display_board_size_selection()
+        elif self.selection_phase == "coin_toss":
+            self.display_coin_toss()
 
         pygame.display.flip()
 
@@ -82,6 +90,56 @@ class Menu:
         self.window.blit(human_surface, human_button_rect.move(20, 10))
         self.window.blit(computer_surface, computer_button_rect.move(10, 10))
 
+    def display_coin_toss(self):
+        # If the user has not made a choice, let them select heads or tails
+        if not self.user_choice:
+            heads_button_rect = pygame.Rect(300, 300, 100, 50)
+            tails_button_rect = pygame.Rect(450, 300, 100, 50)
+
+            pygame.draw.rect(self.window, (0, 255, 0), heads_button_rect)
+            pygame.draw.rect(self.window, (255, 0, 0), tails_button_rect)
+
+            heads_surface = self.font.render("Heads", True, (0, 0, 0))
+            tails_surface = self.font.render("Tails", True, (0, 0, 0))
+
+            self.window.blit(heads_surface, heads_button_rect.move(10, 10))
+            self.window.blit(tails_surface, tails_button_rect.move(10, 10))
+        elif self.coin_flipping:
+            # Simulate the coin flipping
+            coin_side = random.choice(["Heads", "Tails"])
+            result_surface = self.font.render(f"Coin is flipping: {coin_side}", True, (0, 0, 0))
+            self.window.blit(result_surface, (300, 250))
+            pygame.display.update()
+            pygame.time.delay(300)
+
+            if random.random() > 0.8:  # Random chance to stop flipping
+                self.coin_flipping = False
+                self.coin_flip_result = random.choice(["Heads", "Tails"])
+        else:
+            # Show the result of the coin flip
+            result_text = f"The coin landed on {self.coin_flip_result.upper()}!"
+            result_surface = self.font.render(result_text, True, (0, 0, 0))
+            self.window.blit(result_surface, (300, 250))
+
+            # Assign player and computer colors based on the result
+            if self.user_choice == self.coin_flip_result:
+                player_text = "You won the toss! You will play as BLACK."
+                self.player_color = (0, 0, 0)  # Player gets black
+                self.computer_color = (255, 255, 255)  # Computer gets white
+            else:
+                player_text = "You lost the toss! You will play as WHITE."
+                self.player_color = (255, 255, 255)  # Player gets white
+                self.computer_color = (0, 0, 0)  # Computer gets black
+
+            # Display which color the user will play as
+            player_surface = self.font.render(player_text, True, (0, 0, 0))
+            self.window.blit(player_surface, (300, 300))
+
+            # Transition to the game after a short delay
+            pygame.display.update()
+            pygame.time.wait(2000)
+            self.transition_to_game = True
+
     def handle_click(self, pos):
         if self.selection_phase == "num_players":
             self.handle_num_players_click(pos)
@@ -89,6 +147,20 @@ class Menu:
             self.handle_player_type_click(pos)
         elif self.selection_phase == "board_size":
             self.handle_board_size_click(pos)
+        elif self.selection_phase == "coin_toss":
+            self.handle_coin_toss_click(pos)
+
+    def handle_coin_toss_click(self, pos):
+        # Handle the user selecting heads or tails
+        heads_button_rect = pygame.Rect(300, 300, 100, 50)
+        tails_button_rect = pygame.Rect(450, 300, 100, 50)
+
+        if heads_button_rect.collidepoint(pos) and not self.user_choice:
+            self.user_choice = "Heads"
+            self.coin_flipping = True
+        elif tails_button_rect.collidepoint(pos) and not self.user_choice:
+            self.user_choice = "Tails"
+            self.coin_flipping = True
 
     def handle_num_players_click(self, pos):
         for i, num in enumerate([2, 4]):
@@ -116,7 +188,7 @@ class Menu:
             option_rect = pygame.Rect(300 + i * 100, 250, 100, 50)
             if option_rect.collidepoint(pos):
                 self.board_size = size
-                self.transition_to_game = True  # All selections complete, ready to transition
+                self.selection_phase = "coin_toss"  # Move to the coin toss phase
 
     def start_game(self):
         return self.transition_to_game
