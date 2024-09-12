@@ -24,7 +24,7 @@ class ComputerPlayer:
     def generate_all_possible_moves(self):
         self.possible_moves.clear()
         self.capture_moves.clear()  # Clear the capture moves list
-        print(f"Generating moves for color: {self.color}")
+        #print(f"Generating moves for color: {self.color}")
 
         # Iterate through all pieces on the board
         for row in range(self.board.rows):
@@ -32,14 +32,14 @@ class ComputerPlayer:
                 piece = self.board.get_piece(row, col)
 
                 if piece:  # Only proceed if a piece exists
-                    print(f"Found piece at {self.proper_notation((col, row))} with color {piece.color}")
+                    #print(f"Found piece at {self.proper_notation((col, row))} with color {piece.color}")
 
                     # Check if the piece matches the AI's color
                     if piece.color == self.color:
                         self.generate_moves_for_piece(row, col)
 
-        print(f"Total possible moves generated: {len(self.possible_moves)}")
-        print(f"Total capture moves generated: {len(self.capture_moves)}")
+        #print(f"Total possible moves generated: {len(self.possible_moves)}")
+        #print(f"Total capture moves generated: {len(self.capture_moves)}")
 
     def generate_moves_for_piece(self, start_row, start_col):
         # Horizontal moves
@@ -94,7 +94,7 @@ class ComputerPlayer:
 
     def select_and_execute_move(self):
         if not self.capture_moves and not self.possible_moves:
-            print("No possible moves to select from.")
+            #print("No possible moves to select from.")
             return
 
         # Prioritize capture moves if available
@@ -119,11 +119,11 @@ class ComputerPlayer:
                     captured_piece = self.board.get_piece(capture[0], capture[1])
                     if captured_piece:
                         self.board.remove_piece(captured_piece)
-                        print(f"Captured piece at {self.proper_notation((capture[1], capture[0]))}")
+                        #print(f"Captured piece at {self.proper_notation((capture[1], capture[0]))}")
 
             # After handling captures, move the piece to its new position
             self.board.move_piece(piece, end[0], end[1])
-            print(f"AI moved from {start_notation} to {end_notation}")
+            #print(f"AI moved from {start_notation} to {end_notation}")
 
         else:
             print(f"Failed to execute move: {start_notation} to {end_notation}")
