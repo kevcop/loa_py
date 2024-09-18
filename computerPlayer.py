@@ -7,7 +7,6 @@ index_to_col = {
     4: 'E', 5: 'F', 6: 'G', 7: 'H'
 }
 
-
 class ComputerPlayer:
     def __init__(self, board, color=(255, 255, 255)):  # Add color as an argument with default white
         self.board = board
@@ -99,7 +98,7 @@ class ComputerPlayer:
     def select_and_execute_move(self):
         if not self.capture_moves and not self.possible_moves:
             print("No possible moves to select from.")  # Debugging
-            return
+            return None  # No move was executed
 
         # Prioritize capture moves if available
         if self.capture_moves:
@@ -131,13 +130,23 @@ class ComputerPlayer:
             self.board.move_piece(piece, end[0], end[1])
             print(f"AI moved from {start_notation} to {end_notation}")  # Debugging
 
+            # Return the move details for recording in move history
+            return start[0], start[1], end[0], end[1]
+
         else:
             print(f"Failed to execute move: {start_notation} to {end_notation}")  # Debugging
+            return None  # No move was executed
 
     def make_move(self):
         print("AI is attempting to make a move...")  # Debugging
         self.generate_all_possible_moves()
-        self.select_and_execute_move()
+        move = self.select_and_execute_move()
+
+        if move is None:
+            print("AI could not find a valid move.")
+            return None  # Return None if no move was executed
+
+        return move  # Return the move details for history tracking
 
     def display_generated_moves(self):
         """Displays all generated moves for debugging."""

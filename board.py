@@ -260,3 +260,7 @@ class Board:
         #print(f"Setting piece at ({row}, {col}) with color {color}")  # Debugging statement
         self.pieces.append(Piece(row, col, color))  # Add piece to the list
         #print(f"Current pieces on board: {[f'({p.row}, {p.col}, {p.color})' for p in self.pieces]}")  # Debugging statement
+
+    def get_pieces(self, color):
+        """Returns a list of all pieces of a given color on the board."""
+        return [piece for piece in self.pieces if piece.color == color]

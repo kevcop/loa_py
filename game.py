@@ -1,9 +1,12 @@
 import pygame
 from board import Board
+from menu import Menu
 from piece import Piece
 from computerPlayer import ComputerPlayer  # AI class
+from HumanPlayer import HumanPlayer
 import os
 import time
+
 
 class Game:
     def __init__(self, window, num_players, players_type, player_order=None, player_colors=None, board_size=None,
@@ -24,9 +27,13 @@ class Game:
         self.history_offset = 10  # Padding within the history box
         self.show_history_button_rect = pygame.Rect(650, 20, 140, 50)  # Button to show move history
         self.save_game_button_rect = pygame.Rect(650, 80, 140, 50)  # Save Game button position and size
+        self.help_button_rect = pygame.Rect(650, 140, 140, 50)         # Help button
         self.winner_displayed = False  # Track if the winner has been displayed
         self.players = []  # List to store the players (Human or AI)
         self.current_turn = 0  # Initialize current_turn to 0
+        self.player_wins = {i: 0 for i in range(self.num_players)}  # Initialize rounds won for each player
+        self.player_scores = {i: 0 for i in range(self.num_players)}  # Initialize scores for each player
+        self.previous_winner_color = None  # Track the color of the previous round's winner
 
         print(f"Initializing game with {num_players} players.")  # Debugging player count
 
@@ -66,12 +73,20 @@ class Game:
 
         # Ensure proper first turn setup for 2-player or 4-player mode
         if self.num_players == 2:
+            # Swap colors only if the previous winner was the player with the white pieces
+            if self.previous_winner_color == (255, 255, 255) and self.player_wins[0] != self.player_wins[1]:
+                # Swap colors: the player (who was white) now plays with black
+                self.player_color, self.computer_color = self.computer_color, self.player_color
+                print(f"Swapping colors. Player color: {self.get_color_name(self.player_color)}, "
+                      f"Computer color: {self.get_color_name(self.computer_color)}")
+
+            # Set the current turn based on who has the black pieces
             if self.player_color == (0, 0, 0):  # Black
                 self.current_turn = 0  # Player moves first
                 print("Player (Black) moves first.")
             else:
                 self.current_turn = 1  # Computer moves first
-                print("Computer (White) moves first.")
+                print("Computer (Black) moves first.")
         else:
             # For 4-player mode, reset player turns starting with black
             black_player = [player for player, color in self.player_colors.items() if color == (0, 0, 0)][0]
@@ -92,7 +107,7 @@ class Game:
                     players.append(ComputerPlayer(self.board, colors[i]))  # AI player
                 else:
                     print(f"Player {i + 1} is a human.")  # Debugging
-                    players.append(None)  # Human player (we handle human moves manually)
+                    players.append(HumanPlayer())  # Use HumanPlayer class
         else:
             # In 4-player mode, use player_colors (which is a dictionary with keys 1-4)
             for i in range(1, self.num_players + 1):  # 1-based index for 4-player
@@ -101,14 +116,14 @@ class Game:
                     players.append(ComputerPlayer(self.board, self.player_colors[i]))  # AI player
                 else:
                     print(f"Player {i} is a human. Color: {self.player_colors[i]}")  # Debugging
-                    players.append(None)  # Human player (we handle human moves manually)
+                    players.append(HumanPlayer())  # Use HumanPlayer class
 
         print(f"Players created: {players}")  # Debugging
         return players
 
     def update(self):
         """Update the game state and handle rendering."""
-        print("Game update running...")  # Add this debug statement to ensure update() is being called
+        print("Game update running...")  # Debugging
         print(f"Winner flag before update: {self.winner_displayed}")  # Debugging
         print(f"Current turn: {self.current_turn}")  # Debugging
         print(f"Current player: {type(self.players[self.current_turn])}")  # Debugging
@@ -119,6 +134,7 @@ class Game:
         self.display_error_message()
         self.display_show_history_button()
         self.display_save_game_button()  # Display the save game button
+        self.display_help_button()  # Display the Help button
 
         # Check for a winner
         if not self.winner_displayed:
@@ -128,15 +144,25 @@ class Game:
             print("Winner has already been displayed, skipping winner check.")  # Debugging
 
         # If it's an AI's turn, make the move
-        #time.sleep(10)  # Pause for 1 second (you can change the duration as needed)
-        print(f"Current turn: {self.current_turn}")
-        print(f"Player of current turn: {self.players[self.current_turn]}")
         if isinstance(self.players[self.current_turn], ComputerPlayer):
             print(f"Computer player {self.current_turn + 1} is making a move...")  # Debugging
-            self.players[self.current_turn].make_move()
-            self.end_turn()  # Move to the next player after the AI move
+            move = self.players[self.current_turn].make_move()  # Capture move details
+
+            if move is None:
+                print("No valid move found by the computer.")
+                self.end_turn()
+            else:
+                start_row, start_col, end_row, end_col = move
+                self.add_to_move_history(self.board.get_piece(end_row, end_col), start_row, start_col, end_row, end_col)
+                self.end_turn()  # Move to the next player after the AI move
+
+        elif isinstance(self.players[self.current_turn], HumanPlayer):
+            # For human player, we expect interaction via mouse clicks handled elsewhere
+            print(f"Human player {self.current_turn + 1}'s turn.")  # Debugging
+            # The update loop will continue waiting for the human player's input to make a move
+            # This is handled through the `handle_click` method when the user interacts with the board
         else:
-            print(f"It is not the computer's turn.")  # Debugging
+            print(f"Unknown player type. Turn skipped.")  # Debugging
 
     def display_error_message(self):
         """Displays any error messages (e.g., invalid moves)."""
@@ -156,9 +182,11 @@ class Game:
     def handle_click(self, pos):
         """Handles mouse clicks during the game."""
         if self.show_history_button_rect.collidepoint(pos):
-            self.show_move_history_popup()  # Existing behavior for history button
+            self.show_move_history_popup()  # Show move history when the button is clicked
         elif self.save_game_button_rect.collidepoint(pos):
             self.save_game_state()  # Save the game when the button is clicked
+        elif self.help_button_rect.collidepoint(pos):
+            self.display_help()  # Display help for the human player when the Help button is clicked
         else:
             # Handle selecting and moving pieces as usual
             row, col = self.get_row_col_from_mouse(pos)
@@ -215,16 +243,29 @@ class Game:
                 print("No winner found yet.")  # Debugging
 
     def display_winner(self, color):
-        """Displays the winner in a popup window."""
+        """Displays the winner in a popup window and shows scores and rounds won."""
         print(f"Displaying winner: {self.get_color_name(color)}")  # Debugging
-        popup_width, popup_height = 300, 200
+        player_number = self.get_player_number(color)  # Get the player number
+
+        # Update the player's score and rounds won
+        self.update_score(player_number, color)
+
+        popup_width, popup_height = 400, 300  # Increase the height to fit additional info
         popup_window = pygame.display.set_mode((popup_width, popup_height))
         pygame.display.set_caption("Game Over")
 
         font = pygame.font.SysFont('Arial', 30)
         color_name = self.get_color_name(color)
-        text_surface = font.render(f"{color_name} Wins!", True, (0, 0, 0))
-        text_rect = text_surface.get_rect(center=(popup_width // 2, popup_height // 2))
+        text_surface = font.render(f"Player {player_number} ({color_name}) Wins!", True, (0, 0, 0))
+        text_rect = text_surface.get_rect(center=(popup_width // 2, 50))
+
+        # Create smaller font for scores and rounds
+        info_font = pygame.font.SysFont('Arial', 20)
+
+        # Prepare text surfaces for player scores and rounds won
+        scores_text = [f"Player {i + 1} - Rounds Won: {self.player_wins[i]}, Score: {self.player_scores[i]}"
+                       for i in range(self.num_players)]
+        scores_surfaces = [info_font.render(score_text, True, (0, 0, 0)) for score_text in scores_text]
 
         running = True
         while running:
@@ -236,9 +277,51 @@ class Game:
 
             popup_window.fill((240, 240, 240))
             popup_window.blit(text_surface, text_rect)
+
+            # Display scores and rounds
+            y_offset = 100  # Start displaying below the winner text
+            for surface in scores_surfaces:
+                popup_window.blit(surface, (20, y_offset))
+                y_offset += 30  # Move down for the next line of text
+
             pygame.display.flip()
 
         self.ask_replay()
+
+    def get_player_number(self, color):
+        """Returns the player number corresponding to the given color."""
+        if self.num_players == 2:
+            # Handle 2-player mode
+            if color == self.player_color:
+                return 1  # Player 1
+            elif color == self.computer_color:
+                return 2  # Player 2 (Computer)
+        else:
+            # Handle 4-player mode
+            for player_num, player_color in self.player_colors.items():
+                if player_color == color:
+                    return player_num
+        return "Unknown"
+
+    def update_score(self, player_number, color):
+        """Updates the score for the player who won the round."""
+        winner_pieces = len([piece for piece in self.board.pieces if piece.color == color])
+        opponent_color = self.computer_color if color == self.player_color else self.player_color
+        opponent_pieces = len([piece for piece in self.board.pieces if piece.color == opponent_color])
+
+        # Calculate the score difference
+        score_difference = winner_pieces - opponent_pieces
+        self.player_scores[player_number - 1] += score_difference
+
+        # Update rounds won
+        self.player_wins[player_number - 1] += 1
+
+        # Update the color of the previous winner
+        self.previous_winner_color = color
+
+        # Log the updated scores and rounds won
+        print(f"Updated Score for Player {player_number}: {self.player_scores[player_number - 1]}")
+        print(f"Rounds Won by Player {player_number}: {self.player_wins[player_number - 1]}")
 
     def ask_replay(self):
         """Prompts the player to replay the game or quit."""
@@ -350,10 +433,16 @@ class Game:
             return piece.color == current_color
 
     def add_to_move_history(self, piece, start_row, start_col, end_row, end_col):
-        """Adds the current move to the move history."""
+        """Adds the current move to the move history with a descriptive message."""
         start_notation = self.board.get_position_notation(start_row, start_col)
         end_notation = self.board.get_position_notation(end_row, end_col)
-        move = f"{start_notation} to {end_notation}"
+
+        # Determine the player number and color
+        player_number = self.get_player_number(piece.color)
+        color_name = self.get_color_name(piece.color)
+
+        # Construct a descriptive move message
+        move = f"Player {player_number} ({color_name}) moved {start_notation} to {end_notation}"
         self.move_history.append(move)
         print(f"Move added to history: {move}")  # Debugging
 
@@ -446,10 +535,10 @@ class Game:
                 # Initialize the board and clear it
                 self.board = Board(self.board_size, initialize=False)
                 self.board.clear_board()  # This now works with the corrected method
-                print("We are here")
+                print("Initializing board from loaded state...")
+
                 # Load the board state
                 board_section = lines[1:self.board_size + 1]
-                print("Loading board state...")  # Debugging statement
                 for row, line in enumerate(board_section):
                     pieces = line.strip().split()
                     for col, piece_symbol in enumerate(pieces):
@@ -457,54 +546,176 @@ class Game:
                         if piece_symbol == 'B':
                             color_rgb = (0, 0, 0)  # Black piece RGB
                             self.board.set_piece(row, col, color_rgb)
-                            print(f"Color recognized: {self.get_color_name(color_rgb)}")  # Debugging statement
                         elif piece_symbol == 'W':
                             color_rgb = (255, 255, 255)  # White piece RGB
                             self.board.set_piece(row, col, color_rgb)
-                            print(f"Color recognized: {self.get_color_name(color_rgb)}")  # Debugging statement
-                        # No need to handle 'X' since it's an empty space
 
-                # Set player colors based on the loaded file
-                if "Black" in lines[-1]:
-                    self.player_color = (0, 0, 0)
-                    self.computer_color = (255, 255, 255)
-                else:
-                    self.player_color = (255, 255, 255)
-                    self.computer_color = (0, 0, 0)
+                # Extract next player and color information from the file
+                next_player_line = lines[-2].strip().split(": ")[1]  # Should be 'Human' or 'Computer'
+                next_color_line = lines[-1].strip().split(": ")[1]  # Should be 'White' or 'Black'
+
+                # Determine who is who
+                if next_player_line == "Computer":
+                    # If the computer is the next player
+                    if next_color_line == "Black":
+                        self.computer_color = (0, 0, 0)
+                        self.player_color = (255, 255, 255)
+                    else:  # White
+                        self.computer_color = (255, 255, 255)
+                        self.player_color = (0, 0, 0)
+                    self.current_turn = 1  # Computer's turn
+                else:  # Human
+                    if next_color_line == "Black":
+                        self.player_color = (0, 0, 0)
+                        self.computer_color = (255, 255, 255)
+                    else:  # White
+                        self.player_color = (255, 255, 255)
+                        self.computer_color = (0, 0, 0)
+                    self.current_turn = 0  # Human's turn
+
                 print(f"Player color set to: {self.get_color_name(self.player_color)}")
                 print(f"Computer color set to: {self.get_color_name(self.computer_color)}")
+                print(f"Current turn set to: {self.current_turn}")
 
                 # Create players after setting player colors
                 self.players = self.create_players()
-                print(f"Players after loading: {self.players}")  # Debugging statement
-
-                # Set current_turn to the correct player
-                self.current_turn = 1 if "Computer" in lines[-2] else 0
-                print(f"Current turn set to: {self.current_turn}")  # Debugging statement
-
-                print(f"Player at current turn: {type(self.players[self.current_turn])}")  # Debugging
 
                 print("Game state loaded successfully.")
         except Exception as e:
             print(f"Error loading game state: {e}")
 
+    def display_help_button(self):
+        """Displays the 'Help' button."""
+        pygame.draw.rect(self.window, (0, 0, 0), self.help_button_rect)  # Draw button rectangle
+        font = pygame.font.SysFont('Arial', 20)
+        text_surface = font.render("Help", True, (255, 255, 255))  # Button text
+        text_rect = text_surface.get_rect(center=self.help_button_rect.center)
+        self.window.blit(text_surface, text_rect)  # Render the button text onto the window
 
+    def display_help(self):
+        """Displays all possible valid moves for the human player."""
+        possible_moves, capture_moves = self.generate_human_player_moves()
 
+        # Create a popup window to display the help information
+        popup_width, popup_height = 400, 600
+        popup_window = pygame.display.set_mode((popup_width, popup_height))
+        pygame.display.set_caption("Help - Possible Moves")
 
+        font = pygame.font.SysFont('Arial', 20)
 
+        running = True
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    running = False
 
+            popup_window.fill((240, 240, 240))
 
+            y_position = 20
+            if capture_moves:
+                capture_title = font.render("Capture Moves:", True, (0, 0, 0))
+                popup_window.blit(capture_title, (20, y_position))
+                y_position += 30
+                for move in capture_moves:
+                    move_surface = font.render(move, True, (0, 0, 0))
+                    popup_window.blit(move_surface, (20, y_position))
+                    y_position += move_surface.get_height() + 5
 
+            if possible_moves:
+                non_capture_title = font.render("Possible Moves:", True, (0, 0, 0))
+                popup_window.blit(non_capture_title, (20, y_position))
+                y_position += 30
+                for move in possible_moves:
+                    move_surface = font.render(move, True, (0, 0, 0))
+                    popup_window.blit(move_surface, (20, y_position))
+                    y_position += move_surface.get_height() + 5
 
+            pygame.display.flip()
 
+        # Restore the main game window after the popup is closed
+        self.window = pygame.display.set_mode((800, 800))
 
+    def generate_human_player_moves(self):
+        """Generates all possible valid moves for the human player."""
+        possible_moves = []
+        capture_moves = []
+        color = self.player_color if self.current_turn == 0 else self.computer_color  # Get the current player's color
 
+        # Iterate through all pieces on the board
+        for row in range(self.board.rows):
+            for col in range(self.board.cols):
+                piece = self.board.get_piece(row, col)
+                if piece and piece.color == color:
+                    # Generate moves for this piece
+                    moves, captures = self.generate_moves_for_piece(row, col)
+                    possible_moves.extend(moves)
+                    capture_moves.extend(captures)
 
+        return possible_moves, capture_moves
 
+    def generate_moves_for_piece(self, start_row, start_col):
+        """Generates valid moves for a specific piece."""
+        moves = []
+        captures = []
+        piece = self.board.get_piece(start_row, start_col)
 
+        # Horizontal, Vertical, and Diagonal moves
+        # Use logic similar to the ComputerPlayer to generate moves
+        horizontal_moves_required = self.board.count_pieces_on_line(start_row, is_row=True)
+        vertical_moves_required = self.board.count_pieces_on_line(start_col, is_row=False)
+        diagonal_moves_required = self.board.count_diagonal_pieces(start_row, start_col, start_row, start_col)
 
+        # Horizontal moves
+        for offset in range(1, horizontal_moves_required + 1):
+            self.add_human_move_if_valid(start_row, start_col, start_row, start_col + offset, moves, captures)  # Right
+            self.add_human_move_if_valid(start_row, start_col, start_row, start_col - offset, moves, captures)  # Left
 
+        # Vertical moves
+        for offset in range(1, vertical_moves_required + 1):
+            self.add_human_move_if_valid(start_row, start_col, start_row + offset, start_col, moves, captures)  # Down
+            self.add_human_move_if_valid(start_row, start_col, start_row - offset, start_col, moves, captures)  # Up
 
+        # Diagonal moves
+        for offset in range(1, diagonal_moves_required + 1):
+            self.add_human_move_if_valid(start_row, start_col, start_row + offset, start_col + offset, moves,
+                                         captures)  # Bottom-right
+            self.add_human_move_if_valid(start_row, start_col, start_row - offset, start_col - offset, moves,
+                                         captures)  # Top-left
+            self.add_human_move_if_valid(start_row, start_col, start_row + offset, start_col - offset, moves,
+                                         captures)  # Bottom-left
+            self.add_human_move_if_valid(start_row, start_col, start_row - offset, start_col + offset, moves,
+                                         captures)  # Top-right
 
+        return moves, captures
 
+    def add_human_move_if_valid(self, start_row, start_col, end_row, end_col, moves, captures):
+        """Adds a move to the list if it's valid."""
+        if 0 <= end_row < self.board.rows and 0 <= end_col < self.board.cols:
+            is_valid, captures_list = self.validate_move(start_row, start_col, end_row, end_col)
+            start_notation = self.board.get_position_notation(start_row, start_col)
+            end_notation = self.board.get_position_notation(end_row, end_col)
+            move = f"{start_notation} to {end_notation}"
+            if is_valid:
+                if captures_list:
+                    captures.append(move)
+                else:
+                    moves.append(move)
 
+    def validate_move(self, start_row, start_col, end_row, end_col):
+        """Validates if a move is allowed and checks for captures."""
+        captures = []
+        piece = self.board.get_piece(start_row, start_col)
+        if not piece or piece.color != self.player_color:  # Only validate for pieces controlled by the human player
+            return False, captures
+
+        # Use the board's existing move validation logic
+        is_valid, message = self.board.is_valid_move(piece, end_row, end_col)
+        if is_valid:
+            target_piece = self.board.get_piece(end_row, end_col)
+            if target_piece and target_piece.color != self.player_color:
+                captures.append((end_row, end_col))
+            return True, captures
+
+        return False, captures
