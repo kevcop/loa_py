@@ -2,6 +2,7 @@ import pygame
 from game import Game
 from menu import Menu
 
+
 def main():
     pygame.init()
     window = pygame.display.set_mode((800, 800))
@@ -20,9 +21,15 @@ def main():
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Left mouse button
                 if in_menu:
                     menu.handle_click(event.pos)
-                    game_settings = menu.start_game()
+                    if menu.selection_phase == "load_game":
+                        # Handle starting a loaded game
+                        game_settings = menu.start_loaded_game()
+                    else:
+                        # Handle starting a new game
+                        game_settings = menu.start_game()
+
                     if game_settings:
-                        print(f"Starting game with settings: {game_settings}")# Check if we have transitioned to the game
+                        print(f"Starting game with settings: {game_settings}")
                         in_menu = False
                         game = Game(
                             window,
@@ -32,7 +39,8 @@ def main():
                             game_settings['player_colors'],
                             game_settings['board_size'],
                             game_settings.get('player_color'),
-                            game_settings.get('computer_color')
+                            game_settings.get('computer_color'),
+                            game_settings.get('case')  # Pass the case if it's a loaded game
                         )
                 elif game:
                     game.handle_click(event.pos)
@@ -45,7 +53,6 @@ def main():
         pygame.display.flip()
 
     pygame.quit()
-
 
 
 if __name__ == "__main__":

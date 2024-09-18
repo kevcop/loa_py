@@ -2,14 +2,17 @@ import pygame
 from piece import Piece
 
 class Board:
-    def __init__(self, size):
+    def __init__(self, size, initialize=True):
         self.rows = size
         self.cols = size
         self.window_size = 800  # Fixed window size
         self.offset = 50  # Offset for labels
         self.grid_size = (self.window_size - self.offset * 2) // size  # Dynamically calculate grid size based on board size
         self.pieces = []  # List to hold the pieces
-        self.initialize_pieces(size)
+
+        if initialize:  # Only initialize pieces if the flag is True
+            self.initialize_pieces(size)
+
 
     def initialize_pieces(self, size):
         """Initialize pieces based on the number of players and board size."""
@@ -173,13 +176,14 @@ class Board:
 
     def check_connected_group(self, color):
         """Check if all pieces of a specified color are connected, or if only one color remains on the board."""
-
+        #print(f"Color is: {color}")
         # Debugging: Display current pieces on the board
         print(f"Checking connected group for color: {self.get_color_name(color)}")
-        print(f"Current pieces on the board: {self.pieces}")
+        #print(f"Current pieces on the board: {[f'({piece.row}, {piece.col}, {self.get_color_name(piece.color)})' for piece in self.pieces]}")
 
         # Check if only one color remains on the board
         remaining_colors = self.get_remaining_colors()
+        #print(f"Remaining colors on board: {[self.get_color_name(c) for c in remaining_colors]}")  # Debugging statement
 
         if len(remaining_colors) == 1:
             print("Only one color remains on the board, automatic winner.")
@@ -203,6 +207,8 @@ class Board:
         if start_row == -1:
             print("No starting piece found for this color.")
             return False
+
+        #print(f"Starting DFS from piece at ({start_row}, {start_col}) for color {self.get_color_name(color)}")  # Debugging
 
         # Start DFS from the first found piece
         self.dfs(start_row, start_col, color, visited)
@@ -245,3 +251,12 @@ class Board:
         else:
             return "Unknown"
 
+    def clear_board(self):
+        """Clears all pieces from the board."""
+        self.pieces.clear()  # Clears all elements in the pieces list
+
+    def set_piece(self, row, col, color):
+        """Places a piece at the specified position on the board."""
+        #print(f"Setting piece at ({row}, {col}) with color {color}")  # Debugging statement
+        self.pieces.append(Piece(row, col, color))  # Add piece to the list
+        #print(f"Current pieces on board: {[f'({p.row}, {p.col}, {p.color})' for p in self.pieces]}")  # Debugging statement

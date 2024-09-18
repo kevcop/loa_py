@@ -23,7 +23,8 @@ class Menu:
         self.user_choice = None  # Track the user's heads/tails selection
         self.coin_flipping = False  # Track if the coin is flipping
         self.coin_flip_result = None  # Store the final coin flip result
-
+        self.load_game_button_rect = pygame.Rect(300, 400, 200, 50)  # Load Game button
+        self.selected_case = None  # Store the selected load game case
 
     def display(self):
         self.window.fill((240, 240, 240))
@@ -43,6 +44,8 @@ class Menu:
             self.display_coin_toss()  # Coin toss for 2 players remains unchanged
         elif self.selection_phase == "wheel_spin" and self.num_players == 4:
             self.display_wheel_spin()  # Wheel spin for 4 players
+        elif self.selection_phase == "load_game":
+            self.display_load_game_cases()  # Display load game cases
 
         pygame.display.flip()
 
@@ -59,6 +62,21 @@ class Menu:
             pygame.draw.rect(self.window, (0, 0, 255), option_rect)
             option_surface_rect = option_surface.get_rect(center=option_rect.center)
             self.window.blit(option_surface, option_surface_rect)
+
+        # Display the Load Game button
+        pygame.draw.rect(self.window, (0, 0, 0), self.load_game_button_rect)
+        load_game_surface = self.font.render("Load Game", True, (255, 255, 255))
+        load_game_surface_rect = load_game_surface.get_rect(center=self.load_game_button_rect.center)
+        self.window.blit(load_game_surface, load_game_surface_rect)
+
+    def display_load_game_cases(self):
+        # Display 5 "Case" buttons
+        for i in range(5):
+            button_rect = pygame.Rect(300, 200 + i * 60, 200, 50)
+            pygame.draw.rect(self.window, (0, 0, 255), button_rect)
+            case_surface = self.font.render(f"Case {i + 1}", True, (255, 255, 255))
+            case_rect = case_surface.get_rect(center=button_rect.center)
+            self.window.blit(case_surface, case_rect)
 
     def display_board_size_selection(self):
         # Prompt to ask for board size
@@ -175,8 +193,6 @@ class Menu:
                 self.is_wheel_spinning = False
                 self.determine_winner()  # Determine who goes first and assign colors
 
-    # Determine who goes first and assign colors
-
     def draw_wheel(self):
         """Draw the wheel with 4 sections labeled 1, 2, 3, 4 for the players."""
         num_sections = 4  # Number of sections on the wheel
@@ -259,6 +275,22 @@ class Menu:
             self.handle_coin_toss_click(pos)
         elif self.selection_phase == "wheel_spin":
             self.handle_wheel_spin_click(pos)
+        elif self.selection_phase == "load_game":
+            self.handle_load_game_click(pos)
+
+        # Handle Load Game button click
+        if self.selection_phase == "num_players" and self.load_game_button_rect.collidepoint(pos):
+            self.selection_phase = "load_game"  # Move to the load game phase
+
+    def handle_load_game_click(self, pos):
+        # Check which "Case" button is clicked
+        for i in range(5):
+            button_rect = pygame.Rect(300, 200 + i * 60, 200, 50)
+            if button_rect.collidepoint(pos):
+                # Store the selected case number
+                self.selected_case = i + 1
+                print(f"Load Game: Case {self.selected_case} selected")  # For debugging
+                self.transition_to_game = True  # Transition to the game
 
     def handle_wheel_spin_click(self, pos):
         """Handle spinning the wheel when the user clicks the spin button."""
@@ -300,7 +332,16 @@ class Menu:
     def start_game(self):
         """Transition to game, returning necessary values."""
         if self.transition_to_game:
-            if self.num_players == 2:
+            if self.selected_case:  # If a case was selected for loading
+                return {
+                    'num_players': 2,
+                    'players_type': ["Human", "Computer"],
+                    'board_size': 8,  # Assuming default board size for loaded games
+                    'player_order': None,  # Not needed for 2-player mode
+                    'player_colors': None,  # Not needed for 2-player mode
+                    'case': self.selected_case  # Pass the selected case
+                }
+            elif self.num_players == 2:
                 # Return settings for a 2-player game
                 return {
                     'num_players': self.num_players,
@@ -333,3 +374,16 @@ class Menu:
         elif tails_button_rect.collidepoint(pos) and not self.user_choice:
             self.user_choice = "Tails"
             self.coin_flipping = True
+
+    def start_loaded_game(self):
+        """Setup and start the game with the loaded state."""
+        if self.selected_case:
+            return {
+                'num_players': 2,
+                'players_type': ["Human", "Computer"],
+                'board_size': 8,  # Assuming default board size for loaded games
+                'player_order': None,
+                'player_colors': None,
+                'case': self.selected_case  # Load the specified game case
+            }
+        return None
