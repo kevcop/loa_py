@@ -8,82 +8,140 @@ index_to_col = {
 }
 
 class ComputerPlayer:
-    def __init__(self, board, color=(255, 255, 255)):  # Add color as an argument with default white
-        self.board = board
-        self.color = color  # Use the passed color
-        self.possible_moves = []
-        self.capture_moves = []  # Store capture moves separately
 
-    # Update the column mapping to handle more columns, supporting up to 16 columns
+    """
+    Function Name: __init__
+    Purpose: To initialize the computer player with a board and piece color.
+    Parameters:
+        board (Board), the game board.
+        color (tuple), the RGB color of the player's pieces, default is white.
+    Return Value: None
+    Algorithm:
+        1) Set the board and player color.
+        2) Initialize lists for possible moves and capture moves.
+    Reference: None
+    """
+    def __init__(self, board, color=(255, 255, 255)):
+        self.board = board
+        self.color = color
+        self.possible_moves = []
+        self.capture_moves = []
+
+    """
+    Function Name: proper_notation
+    Purpose: To convert a position to proper chess-like notation (A1, B2, etc.).
+    Parameters:
+        position (tuple), a tuple representing the (column, row) on the board.
+    Return Value: A string representing the position in chess-like notation.
+    Algorithm:
+        1) Convert the column index to a letter (A, B, C, etc.).
+        2) Convert the row index to a 1-based number.
+    Reference: None
+    """
     def proper_notation(self, position):
         col, row = position
-        column_letter = chr(65 + col)  # Convert column index to A, B, C, etc., dynamically for larger boards
-        row_number = row + 1  # Adjust for 1-based row index
+        column_letter = chr(65 + col)
+        row_number = row + 1
         return f"{column_letter}{row_number}"
 
+    """
+    Function Name: generate_all_possible_moves
+    Purpose: To generate all valid moves and capture moves for the AI player.
+    Parameters: None
+    Return Value: None
+    Algorithm:
+        1) Clear any previously stored moves.
+        2) Iterate through all pieces on the board and generate valid moves for each.
+    Reference: None
+    """
     def generate_all_possible_moves(self):
         self.possible_moves.clear()
-        self.capture_moves.clear()  # Clear the capture moves list
-        print(f"Generating moves for color: {self.color}")  # Debugging
+        self.capture_moves.clear()
+        print(f"Generating moves for color: {self.color}")
 
-        # Iterate through all pieces on the board
         for row in range(self.board.rows):
             for col in range(self.board.cols):
                 piece = self.board.get_piece(row, col)
+                if piece and piece.color == self.color:
+                    print(f"Found piece at {self.proper_notation((col, row))} with color {piece.color}")
+                    self.generate_moves_for_piece(row, col)
 
-                if piece:  # Only proceed if a piece exists
-                    print(f"Found piece at {self.proper_notation((col, row))} with color {piece.color}")  # Debugging
+        print(f"Total possible moves generated: {len(self.possible_moves)}")
+        print(f"Total capture moves generated: {len(self.capture_moves)}")
+        self.display_generated_moves()
 
-                    # Check if the piece matches the AI's color
-                    if piece.color == self.color:
-                        self.generate_moves_for_piece(row, col)
-
-        print(f"Total possible moves generated: {len(self.possible_moves)}")  # Debugging
-        print(f"Total capture moves generated: {len(self.capture_moves)}")  # Debugging
-        self.display_generated_moves()  # Display all generated moves
-
+    """
+    Function Name: generate_moves_for_piece
+    Purpose: To generate valid moves for a specific piece on the board.
+    Parameters:
+        start_row (int), the row of the piece.
+        start_col (int), the column of the piece.
+    Return Value: None
+    Algorithm:
+        1) Generate horizontal, vertical, and diagonal moves based on game rules.
+    Reference: None
+    """
     def generate_moves_for_piece(self, start_row, start_col):
-        # Horizontal moves
         horizontal_moves_required = self.board.count_pieces_on_line(start_row, is_row=True)
         for offset in range(1, horizontal_moves_required + 1):
-            self.add_move_if_valid(start_row, start_col, start_row, start_col + offset)  # Right
-            self.add_move_if_valid(start_row, start_col, start_row, start_col - offset)  # Left
+            self.add_move_if_valid(start_row, start_col, start_row, start_col + offset)
+            self.add_move_if_valid(start_row, start_col, start_row, start_col - offset)
 
-        # Vertical moves
         vertical_moves_required = self.board.count_pieces_on_line(start_col, is_row=False)
         for offset in range(1, vertical_moves_required + 1):
-            self.add_move_if_valid(start_row, start_col, start_row + offset, start_col)  # Down
-            self.add_move_if_valid(start_row, start_col, start_row - offset, start_col)  # Up
+            self.add_move_if_valid(start_row, start_col, start_row + offset, start_col)
+            self.add_move_if_valid(start_row, start_col, start_row - offset, start_col)
 
-        # Diagonal moves
         diagonal_moves_required = self.board.count_diagonal_pieces(start_row, start_col, start_row, start_col)
         for offset in range(1, diagonal_moves_required + 1):
-            self.add_move_if_valid(start_row, start_col, start_row + offset, start_col + offset)  # Bottom-right
-            self.add_move_if_valid(start_row, start_col, start_row - offset, start_col - offset)  # Top-left
-            self.add_move_if_valid(start_row, start_col, start_row + offset, start_col - offset)  # Bottom-left
-            self.add_move_if_valid(start_row, start_col, start_row - offset, start_col + offset)  # Top-right
+            self.add_move_if_valid(start_row, start_col, start_row + offset, start_col + offset)
+            self.add_move_if_valid(start_row, start_col, start_row - offset, start_col - offset)
+            self.add_move_if_valid(start_row, start_col, start_row + offset, start_col - offset)
+            self.add_move_if_valid(start_row, start_col, start_row - offset, start_col + offset)
 
+    """
+    Function Name: add_move_if_valid
+    Purpose: To validate a move and add it to the list of possible or capture moves.
+    Parameters:
+        start_row (int), the starting row of the piece.
+        start_col (int), the starting column of the piece.
+        end_row (int), the destination row.
+        end_col (int), the destination column.
+    Return Value: None
+    Algorithm:
+        1) Validate the move.
+        2) Add valid moves to either the possible or capture moves list.
+    Reference: None
+    """
     def add_move_if_valid(self, start_row, start_col, end_row, end_col):
         if 0 <= end_row < self.board.rows and 0 <= end_col < self.board.cols:
             is_valid, captures = self.validate_move(start_row, start_col, end_row, end_col)
             if is_valid:
-                move_details = {
-                    'start': (start_row, start_col),
-                    'end': (end_row, end_col),
-                    'captures': captures
-                }
-                # Add the move to capture_moves if it results in a capture, otherwise to possible_moves
+                move_details = {'start': (start_row, start_col), 'end': (end_row, end_col), 'captures': captures}
                 if captures:
                     self.capture_moves.append(move_details)
                 else:
                     self.possible_moves.append(move_details)
-                print(
-                    f"Valid move found: {self.proper_notation((start_col, start_row))} to {self.proper_notation((end_col, end_row))}")  # Debugging
+                print(f"Valid move found: {self.proper_notation((start_col, start_row))} to {self.proper_notation((end_col, end_row))}")
 
+    """
+    Function Name: validate_move
+    Purpose: To check if a move is valid and check for potential captures.
+    Parameters:
+        start_row (int), the starting row of the piece.
+        start_col (int), the starting column of the piece.
+        end_row (int), the destination row.
+        end_col (int), the destination column.
+    Return Value: A tuple (is_valid, captures), where is_valid is True if valid and captures is a list of captured pieces.
+    Algorithm:
+        1) Check if the move is valid according to the board rules.
+        2) Check if any opponent pieces are captured.
+    Reference: None
+    """
     def validate_move(self, start_row, start_col, end_row, end_col):
         captures = []
         piece = self.board.get_piece(start_row, start_col)
-        if not piece or piece.color != self.color:  # Only validate for pieces controlled by AI
+        if not piece or piece.color != self.color:
             return False, captures
 
         is_valid, message = self.board.is_valid_move(piece, end_row, end_col)
@@ -95,12 +153,21 @@ class ComputerPlayer:
 
         return False, captures
 
+    """
+    Function Name: select_and_execute_move
+    Purpose: To select a move from the list of possible or capture moves and execute it on the board.
+    Parameters: None
+    Return Value: A tuple (start_row, start_col, end_row, end_col) representing the move, or None if no move was executed.
+    Algorithm:
+        1) Prioritize capture moves if available, otherwise select a random move.
+        2) Execute the selected move and return the details.
+    Reference: None
+    """
     def select_and_execute_move(self):
         if not self.capture_moves and not self.possible_moves:
-            print("No possible moves to select from.")  # Debugging
-            return None  # No move was executed
+            print("No possible moves to select from.")
+            return None
 
-        # Prioritize capture moves if available
         if self.capture_moves:
             selected_move = random.choice(self.capture_moves)
         else:
@@ -112,44 +179,55 @@ class ComputerPlayer:
         end_notation = self.proper_notation((end[1], end[0]))
 
         piece = self.board.get_piece(start[0], start[1])
+        print(f"Selected move: {start_notation} to {end_notation}")
 
-        print(f"Selected move: {start_notation} to {end_notation}")  # Debugging
-
-        # If the move is valid
         if piece and self.board.is_valid_move(piece, end[0], end[1])[0]:
-
-            # Process potential captures first
             if selected_move['captures']:
                 for capture in selected_move['captures']:
                     captured_piece = self.board.get_piece(capture[0], capture[1])
                     if captured_piece:
                         self.board.remove_piece(captured_piece)
-                        print(f"Captured piece at {self.proper_notation((capture[1], capture[0]))}")  # Debugging
+                        print(f"Captured piece at {self.proper_notation((capture[1], capture[0]))}")
 
-            # After handling captures, move the piece to its new position
             self.board.move_piece(piece, end[0], end[1])
-            print(f"AI moved from {start_notation} to {end_notation}")  # Debugging
+            print(f"AI moved from {start_notation} to {end_notation}")
 
-            # Return the move details for recording in move history
             return start[0], start[1], end[0], end[1]
-
         else:
-            print(f"Failed to execute move: {start_notation} to {end_notation}")  # Debugging
-            return None  # No move was executed
+            print(f"Failed to execute move: {start_notation} to {end_notation}")
+            return None
 
+    """
+    Function Name: make_move
+    Purpose: To have the AI attempt to make a move.
+    Parameters: None
+    Return Value: A tuple (start_row, start_col, end_row, end_col) representing the executed move, or None if no move was made.
+    Algorithm:
+        1) Generate all possible moves.
+        2) Select and execute a move.
+    Reference: None
+    """
     def make_move(self):
-        print("AI is attempting to make a move...")  # Debugging
+        print("AI is attempting to make a move...")
         self.generate_all_possible_moves()
         move = self.select_and_execute_move()
 
         if move is None:
             print("AI could not find a valid move.")
-            return None  # Return None if no move was executed
+            return None
 
-        return move  # Return the move details for history tracking
+        return move
 
+    """
+    Function Name: display_generated_moves
+    Purpose: To display all the generated moves for debugging purposes.
+    Parameters: None
+    Return Value: None
+    Algorithm:
+        1) Print all possible moves and capture moves.
+    Reference: None
+    """
     def display_generated_moves(self):
-        """Displays all generated moves for debugging."""
         print("Displaying all generated moves:")
         if not self.possible_moves and not self.capture_moves:
             print("No moves were generated.")

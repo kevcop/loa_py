@@ -1,106 +1,124 @@
 import pygame
 from piece import Piece
 
-
-
 class Board:
     """
-    Represents the game board for the Lines of Action game.
-
-    This class manages the state of the game board, including piece positions,
-    validating moves, and tracking the number of pieces.
-
-    PROVIDE PICS WITH FIXED GAME
-    """
-
+       Function Name: __init__
+       Purpose: To initialize the game board with a given size and optionally place pieces.
+       Parameters:
+           size (int), an integer that refers to the number of rows and columns.
+           initialize (bool), a boolean flag to determine whether pieces should be initialized.
+       Return Value: None
+       Algorithm:
+           1) Set rows, columns, window size, offset, and grid size.
+           2) Initialize pieces if the flag is set to True.
+       Reference: None
+       """
     def __init__(self, size, initialize=True):
-        """
-        Constructor to initialize the game board.
 
-        Initializes the game board with the given size and optionally places
-        pieces on the board.
-
-        Args:
-            size (int): The size of the board (number of rows and columns).
-            initialize (bool): A flag indicating whether to initialize pieces.
-        """
         self.rows = size
         self.cols = size
-        self.window_size = 800  # Fixed window size
-        self.offset = 50  # Offset for labels
-        self.grid_size = (
-                                     self.window_size - self.offset * 2) // size  # Dynamically calculate grid size based on board size
-        self.pieces = []  # List to hold the pieces
+        self.window_size = 800
+        self.offset = 50
+        self.grid_size = (self.window_size - self.offset * 2) // size
+        self.pieces = []
 
-        if initialize:  # Only initialize pieces if the flag is True
+        if initialize:
             self.initialize_pieces(size)
 
+
+        """
+        Function Name: initialize_pieces
+        Purpose: To initialize the pieces on the board depending on the number of players.
+        Parameters:
+            size (int), an integer representing the size of the board.
+        Return Value: None
+        Algorithm:
+            1) Check if the size is 8 and initialize two-player pieces.
+            2) Otherwise, initialize four-player pieces.
+        Reference: None
+        """
+
     def initialize_pieces(self, size):
-        """
-        Initializes the pieces on the board based on the number of players and board size.
-
-        This function calls either `initialize_2_player_pieces` or `initialize_4_player_pieces`
-        depending on the size of the board to set up the initial configuration of pieces.
-
-        Args:
-            size (int): The size of the board, used to determine which initialization to perform.
-        """
         if size == 8:
             self.initialize_2_player_pieces()
         else:
             self.initialize_4_player_pieces(size)
 
-    def initialize_2_player_pieces(self):
         """
-        Initializes pieces for a two-player game.
+        Function Name: initialize_2_player_pieces
+        Purpose: To place pieces for a two-player game.
+        Parameters: None
+        Return Value: None
+        Algorithm:
+            1) Place black pieces on the top and bottom rows.
+            2) Place white pieces on the left and right columns.
+        Reference: None
+        """
 
-        Places pieces for Player 1 (black) on the top and bottom rows,
-        and Player 2 (white) on the left and right columns.
+    def initialize_2_player_pieces(self):
+        for i in range(1, 7):
+            self.pieces.append(Piece(0, i, (0, 0, 0)))
+            self.pieces.append(Piece(7, i, (0, 0, 0)))
+        for i in range(1, 7):
+            self.pieces.append(Piece(i, 0, (255, 255, 255)))
+            self.pieces.append(Piece(i, 7, (255, 255, 255)))
+
         """
-        for i in range(1, 7):
-            self.pieces.append(Piece(0, i, (0, 0, 0)))  # Top row (black)
-            self.pieces.append(Piece(7, i, (0, 0, 0)))  # Bottom row (black)
-        for i in range(1, 7):
-            self.pieces.append(Piece(i, 0, (255, 255, 255)))  # Left column (white)
-            self.pieces.append(Piece(i, 7, (255, 255, 255)))  # Right column (white)
+        Function Name: initialize_4_player_pieces
+        Purpose: To place pieces for a four-player game based on the board size.
+        Parameters:
+            size (int), an integer representing the size of the board.
+        Return Value: None
+        Algorithm:
+            1) Place alternating black and red pieces on the top and bottom rows.
+            2) Place alternating white and green pieces on the left and right columns.
+        Reference: None
+        """
 
     def initialize_4_player_pieces(self, size):
+
+        if size == 12:
+            empty_spaces = (size - 10) // 2
+            for i in range(10):
+                col_position = empty_spaces + i
+                color = (0, 0, 0) if i % 2 == 0 else (255, 0, 0)
+                self.pieces.append(Piece(0, col_position, color))
+                self.pieces.append(Piece(size - 1, col_position, color))
+            for i in range(10):
+                row_position = empty_spaces + i
+                color = (255, 255, 255) if i % 2 == 0 else (0, 255, 0)
+                self.pieces.append(Piece(row_position, 0, color))
+                self.pieces.append(Piece(row_position, size - 1, color))
+
+        if size == 16:
+            empty_spaces = (size - 14) // 2
+            for i in range(14):
+                col_position = empty_spaces + i
+                color = (0, 0, 0) if i % 2 == 0 else (255, 0, 0)
+                self.pieces.append(Piece(0, col_position, color))
+                self.pieces.append(Piece(size - 1, col_position, color))
+            for i in range(14):
+                row_position = empty_spaces + i
+                color = (255, 255, 255) if i % 2 == 0 else (0, 255, 0)
+                self.pieces.append(Piece(row_position, 0, color))
+                self.pieces.append(Piece(row_position, size - 1, color))
+
         """
-        Initializes pieces for a four-player game.
-
-        Places alternating black and red pieces on the top and bottom rows,
-        and alternating white and green pieces on the left and right columns.
-
-        Args:
-            size (int): The size of the board.
-
-
+        Function Name: draw
+        Purpose: To draw the board and pieces on the game window.
+        Parameters:
+            window (pygame.Surface), the window where the game is displayed.
+            selected_piece (Piece), an optional piece that is highlighted (default is None).
+        Return Value: None
+        Algorithm:
+            1) Draw the grid and labels.
+            2) Draw pieces and outline selected pieces if applicable.
+        Reference: None
         """
-
-
-        empty_spaces = (size - 14) // 2
-        for i in range(14):
-            col_position = empty_spaces + i
-            color = (0, 0, 0) if i % 2 == 0 else (255, 0, 0)  # Black (B) and Red (R)
-            self.pieces.append(Piece(0, col_position, color))  # Top row
-            self.pieces.append(Piece(size - 1, col_position, color))  # Bottom row
-        for i in range(6):
-            row_position = empty_spaces + i
-            color = (255, 255, 255) if i % 2 == 0 else (0, 255, 0)  # White (W) and Green (G)
-            self.pieces.append(Piece(row_position, 0, color))  # Left column
-            self.pieces.append(Piece(row_position, size - 1, color))  # Right column
 
     def draw(self, window, selected_piece=None):
-        """
-        Draws the game board and pieces on the Pygame window.
 
-        This function draws the grid for the board, places the pieces in their
-        current positions, and highlights any selected piece.
-
-        Args:
-            window (pygame.Surface): The Pygame window surface to draw on.
-            selected_piece (Piece, optional): The currently selected piece to highlight (if any).
-        """
         tan_color = (210, 180, 140)
         font = pygame.font.SysFont('Arial', 24)
         for row in range(self.rows):
@@ -116,94 +134,107 @@ class Board:
                     piece.draw(window, self.grid_size, self.offset)
         for col in range(self.cols):
             label = font.render(chr(65 + col), True, (0, 0, 0))
-            label_rect = label.get_rect(center=(
-            col * self.grid_size + self.offset + self.grid_size // 2, self.rows * self.grid_size + self.offset + 20))
+            label_rect = label.get_rect(center=(col * self.grid_size + self.offset + self.grid_size // 2,
+                                                self.rows * self.grid_size + self.offset + 20))
             window.blit(label, label_rect)
         for row in range(self.rows):
             label = font.render(str(self.rows - row), True, (0, 0, 0))
-            label_rect = label.get_rect(
-                center=(self.offset - 20, row * self.grid_size + self.offset + self.grid_size // 2))
+            label_rect = label.get_rect(center=(self.offset - 20, row * self.grid_size + self.offset +
+                                                self.grid_size // 2))
             window.blit(label, label_rect)
 
+        """
+        Function Name: outline_piece
+        Purpose: To draw an outline around a selected piece.
+        Parameters:
+            window (pygame.Surface), the window where the game is displayed.
+            piece (Piece), the piece to be outlined.
+        Return Value: None
+        Algorithm:
+            1) Draw a rectangle around the piece to indicate selection.
+        Reference: None
+        """
+
     def outline_piece(self, window, piece):
-        """
-        Draws an outline around a selected piece on the board.
 
-        Highlights the selected piece in a distinct color to indicate selection.
-
-        Args:
-            window (pygame.Surface): The Pygame window surface to draw on.
-            piece (Piece): The selected piece to outline.
-        """
         outline_color = (255, 215, 0)
         outline_rect = pygame.Rect(piece.col * self.grid_size + self.offset, piece.row * self.grid_size + self.offset,
                                    self.grid_size, self.grid_size)
         pygame.draw.rect(window, outline_color, outline_rect, 5)
 
+
+        """
+        Function Name: get_piece
+        Purpose: To retrieve a piece at a specific board location.
+        Parameters:
+            row (int), the row of the piece.
+            col (int), the column of the piece.
+        Return Value: The piece at the given location, or None if no piece exists.
+        Algorithm:
+            1) Search through the list of pieces to find one at the given row and column.
+        Reference: None
+        """
     def get_piece(self, row, col):
-        """
-        Retrieves the piece at a specific board location.
 
-        Searches for and returns the piece at the specified row and column
-        on the board.
-
-        Args:
-            row (int): The row of the desired piece.
-            col (int): The column of the desired piece.
-
-        Returns:
-            Piece or None: The piece at the specified location, or None if no piece exists there.
-        """
         for piece in self.pieces:
             if piece.row == row and piece.col == col:
                 return piece
         return None
 
+
+    """
+        Function Name: remove_piece
+        Purpose: To remove a specified piece from the board.
+        Parameters:
+            piece (Piece), the piece to be removed.
+        Return Value: None
+        Algorithm:
+            1) Remove the piece from the list of active pieces.
+        Reference: None
+        """
+
     def remove_piece(self, piece):
-        """
-        Removes a piece from the board.
 
-        Deletes the specified piece from the list of active pieces.
-
-        Args:
-            piece (Piece): The piece to remove.
-        """
         self.pieces.remove(piece)
 
+
+        """
+        Function Name: move_piece
+        Purpose: To move a piece to a new location on the board and handle captures.
+        Parameters:
+            piece (Piece), the piece to be moved.
+            row (int), the destination row.
+            col (int), the destination column.
+        Return Value: None
+        Algorithm:
+            1) Check if a piece of a different color is at the destination and capture it.
+            2) Update the piece’s row and column to the new position.
+        Reference: None
+        """
     def move_piece(self, piece, row, col):
-        """
-        Moves a piece to a new location on the board.
 
-        Updates the position of the piece and handles capturing an opponent's piece
-        if it exists at the destination.
-
-        Args:
-            piece (Piece): The piece to move.
-            row (int): The row to move the piece to.
-            col (int): The column to move the piece to.
-        """
         target_piece = self.get_piece(row, col)
         if target_piece and target_piece.color != piece.color:
             self.remove_piece(target_piece)
         piece.row = row
         piece.col = col
 
+
+        """
+        Function Name: is_valid_move
+        Purpose: To check if a move is valid according to game rules.
+        Parameters:
+            piece (Piece), the piece attempting the move.
+            row (int), the destination row.
+            col (int), the destination column.
+        Return Value: A tuple containing a boolean (True if valid) and a message.
+        Algorithm:
+            1) Check for out-of-bounds or blocked paths.
+            2) Ensure the move is along a valid line (horizontal, vertical, or diagonal).
+        Reference: None
+        """
     def is_valid_move(self, piece, row, col):
-        """
-        Validates whether a move is legal based on the game rules.
 
-        Checks if the move is within bounds, follows movement rules, and is not blocked
-        by other pieces.
-
-        Args:
-            piece (Piece): The piece attempting the move.
-            row (int): The destination row for the piece.
-            col (int): The destination column for the piece.
-
-        Returns:
-            tuple: A tuple (is_valid, message) where is_valid is a boolean indicating if the move is valid,
-                   and message contains an error or success message.
-        """
         if not (0 <= row < self.rows and 0 <= col < self.cols):
             return False, "Move is out of bounds."
         if self.get_piece(row, col) and self.get_piece(row, col).color == piece.color:
@@ -229,23 +260,23 @@ class Board:
             return False, f"Invalid move distance: Attempted {distance}, but required {line_pieces}."
         return True, ""
 
+    """
+        Function Name: is_path_clear
+        Purpose: To check if the path between two positions is clear of opponent pieces.
+        Parameters:
+            start_row (int), the starting row of the piece.
+            start_col (int), the starting column of the piece.
+            end_row (int), the destination row.
+            end_col (int), the destination column.
+            color (tuple), the color of the moving piece.
+        Return Value: True if the path is clear, False otherwise.
+        Algorithm:
+            1) Check each position between the start and end for opposing pieces.
+        Reference: None
+        """
+
     def is_path_clear(self, start_row, start_col, end_row, end_col, color):
-        """
-        Checks if the path between two positions is clear for a piece to move.
 
-        This function checks if the cells between the starting and ending positions are unoccupied
-        by opponent pieces, allowing the piece to move along a straight line or diagonal.
-
-        Args:
-            start_row (int): The starting row of the piece.
-            start_col (int): The starting column of the piece.
-            end_row (int): The destination row.
-            end_col (int): The destination column.
-            color (tuple): The color of the moving piece.
-
-        Returns:
-            bool: True if the path is clear, False otherwise.
-        """
         d_row = (end_row - start_row) // max(1, abs(end_row - start_row))
         d_col = (end_col - start_col) // max(1, abs(end_col - start_col))
         current_row = start_row + d_row
@@ -259,22 +290,23 @@ class Board:
             current_col += d_col
         return True
 
+
+    """
+        Function Name: count_diagonal_pieces
+        Purpose: To count the number of pieces along a diagonal path.
+        Parameters:
+            start_row (int), the starting row of the diagonal.
+            start_col (int), the starting column of the diagonal.
+            end_row (int), the ending row of the diagonal.
+            end_col (int), the ending column of the diagonal.
+        Return Value: The number of pieces along the diagonal.
+        Algorithm:
+            1) Count pieces from the start to the end of the diagonal path.
+        Reference: None
+        """
+
     def count_diagonal_pieces(self, start_row, start_col, end_row, end_col):
-        """
-        Counts the number of pieces along a diagonal between two points.
 
-        Counts all pieces found along a diagonal path between the start and end positions,
-        used to determine valid movement distances.
-
-        Args:
-            start_row (int): The starting row of the diagonal.
-            start_col (int): The starting column of the diagonal.
-            end_row (int): The ending row of the diagonal.
-            end_col (int): The ending column of the diagonal.
-
-        Returns:
-            int: The number of pieces along the diagonal.
-        """
         count = 0
         d_row = 1 if end_row > start_row else -1
         d_col = 1 if end_col > start_col else -1
@@ -292,20 +324,20 @@ class Board:
             col += d_col
         return count
 
+
+    """
+        Function Name: count_pieces_on_line
+        Purpose: To count the number of pieces along a row or column.
+        Parameters:
+            index (int), the index of the row or column to count pieces on.
+            is_row (bool), a boolean indicating whether to count on a row (True) or column (False).
+        Return Value: The number of pieces on the specified line.
+        Algorithm:
+            1) Count pieces in the specified row or column.
+        Reference: None
+        """
     def count_pieces_on_line(self, index, is_row=True):
-        """
-        Counts the number of pieces on a row or column line.
 
-        Used to determine if a piece can move based on the number of pieces along
-        the row or column it is moving through.
-
-        Args:
-            index (int): The index of the row or column to count pieces on.
-            is_row (bool): A flag indicating whether to count pieces in a row (True) or a column (False).
-
-        Returns:
-            int: The number of pieces on the specified line.
-        """
         count = 0
         if is_row:
             for col in range(self.cols):
@@ -317,56 +349,57 @@ class Board:
                     count += 1
         return count
 
+
+    """
+        Function Name: get_position_notation
+        Purpose: To convert a board position into standard chess-like notation.
+        Parameters:
+            row (int), the row of the position.
+            col (int), the column of the position.
+        Return Value: A string representing the position in chess notation.
+        Algorithm:
+            1) Convert the row and column into chess-like notation.
+        Reference: None
+        """
     def get_position_notation(self, row, col):
-        """
-        Converts a board position into chess-like notation.
 
-        Converts the given row and column into standard board game notation
-        with column labels (A-H) and row numbers (1-8).
-
-        Args:
-            row (int): The row of the position.
-            col (int): The column of the position.
-
-        Returns:
-            str: A string representing the position in chess notation.
-        """
         column_label = chr(65 + col)
         row_label = str(self.rows - row)
         return f"{column_label}{row_label}"
 
+
+
+    """
+        Function Name: get_remaining_colors
+        Purpose: To retrieve all remaining colors of pieces on the board.
+        Parameters: None
+        Return Value: A set containing the colors of all remaining pieces.
+        Algorithm:
+            1) Iterate over the pieces to collect unique colors.
+        Reference: None
+        """
     def get_remaining_colors(self):
-        """
-        Retrieves a set of all remaining piece colors on the board.
 
-        Collects all unique colors of pieces that are still on the board.
-
-        Returns:
-            set: A set containing the colors of all remaining pieces.
-        """
         remaining_colors = set()
         for piece in self.pieces:
             remaining_colors.add(piece.color)
         return remaining_colors
 
+
+    """
+        Function Name: check_connected_group
+        Purpose: To check if all pieces of a specified color are connected.
+        Parameters:
+            color (tuple), the color of the pieces to check.
+        Return Value: True if all pieces are connected, False otherwise.
+        Algorithm:
+            1) Use Depth First Search (DFS) to verify if all pieces of the same color are connected.
+        Reference: None
+        """
     def check_connected_group(self, color):
-        """
-        Checks if all pieces of a specified color are connected.
-
-        Verifies if all pieces of a given color form a connected group
-        or if only one color remains on the board.
-
-        Args:
-            color (tuple): The color of the pieces to check.
-
-        Returns:
-            bool: True if all pieces are connected or if only one color remains, False otherwise.
-        """
-        print(f"Checking connected group for color: {self.get_color_name(color)}")
 
         remaining_colors = self.get_remaining_colors()
         if len(remaining_colors) == 1:
-            print("Only one color remains on the board, automatic winner.")
             return True
 
         start_row, start_col = -1, -1
@@ -382,7 +415,6 @@ class Board:
                 break
 
         if start_row == -1:
-            print("No starting piece found for this color.")
             return False
 
         self.dfs(start_row, start_col, color, visited)
@@ -393,21 +425,24 @@ class Board:
                 if piece and piece.color == color and not visited[row][col]:
                     return False
 
-        print(f"All pieces of color {self.get_color_name(color)} are connected.")
         return True
 
+
+    """
+        Function Name: dfs
+        Purpose: To perform Depth First Search to check for connected pieces.
+        Parameters:
+            row (int), the row of the current piece.
+            col (int), the column of the current piece.
+            color (tuple), the color of the pieces being checked.
+            visited (list), a 2D list tracking visited pieces.
+        Return Value: None
+        Algorithm:
+            1) Recursively visit all connected pieces of the same color using DFS.
+        Reference: None
+        """
     def dfs(self, row, col, color, visited):
-        """
-        Performs Depth First Search (DFS) to check for connected pieces.
 
-        Recursively visits all connected pieces of the same color using DFS.
-
-        Args:
-            row (int): The row of the current piece.
-            col (int): The column of the current piece.
-            color (tuple): The color of the pieces being checked.
-            visited (list): A 2D list tracking visited pieces.
-        """
         row_nbr = [-1, 1, 0, 0, -1, -1, 1, 1]
         col_nbr = [0, 0, -1, 1, -1, 1, -1, 1]
         visited[row][col] = True
@@ -417,38 +452,41 @@ class Board:
             if self.is_safe(new_row, new_col, color, visited):
                 self.dfs(new_row, new_col, color, visited)
 
+
+        """
+        Function Name: is_safe
+        Purpose: To check if a piece can be safely visited during DFS.
+        Parameters:
+            row (int), the row of the piece.
+            col (int), the column of the piece.
+            color (tuple), the color being checked.
+            visited (list), the 2D list of visited pieces.
+        Return Value: True if the piece is safe to visit, False otherwise.
+        Algorithm:
+            1) Check if the piece matches the color and has not been visited.
+        Reference: None
+        """
+
     def is_safe(self, row, col, color, visited):
-        """
-        Checks if a piece can be safely visited during DFS.
 
-        Validates if the piece at the specified position matches the target color
-        and has not been visited.
-
-        Args:
-            row (int): The row of the piece to check.
-            col (int): The column of the piece to check.
-            color (tuple): The color being checked.
-            visited (list): The 2D list of visited pieces.
-
-        Returns:
-            bool: True if the piece is safe to visit, False otherwise.
-        """
         return (0 <= row < self.rows) and (0 <= col < self.cols) and \
             self.get_piece(row, col) and self.get_piece(row, col).color == color and \
             not visited[row][col]
 
+
+    """
+        Function Name: get_color_name
+        Purpose: To convert an RGB color tuple to a string representing the color name.
+        Parameters:
+            color (tuple), the RGB tuple of the color.
+        Return Value: A string representing the color name.
+        Algorithm:
+            1) Translate RGB values into user-friendly color names.
+        Reference: None
+        """
+
     def get_color_name(self, color):
-        """
-        Converts an RGB color tuple to a string representing the color name.
 
-        Translates RGB values into user-friendly color names for display purposes.
-
-        Args:
-            color (tuple): The RGB tuple of the color.
-
-        Returns:
-            str: A string representing the name of the color.
-        """
         if color == (0, 0, 0):
             return "Black"
         elif color == (255, 255, 255):
@@ -459,38 +497,49 @@ class Board:
             return "Green"
         else:
             return "Unknown"
-
+    """
+        Function Name: clear_board
+        Purpose: To clear all pieces from the board.
+        Parameters: None
+        Return Value: None
+        Algorithm:
+            1) Remove all pieces from the board.
+        Reference: None
+        """
     def clear_board(self):
-        """
-        Clears all pieces from the board.
 
-        Removes all pieces from the board, resetting the game state.
-        """
         self.pieces.clear()
 
+
+        """
+        Function Name: set_piece
+        Purpose: To place a piece at a specified location on the board.
+        Parameters:
+            row (int), the row to place the piece in.
+            col (int), the column to place the piece in.
+            color (tuple), the color of the piece.
+        Return Value: None
+        Algorithm:
+            1) Add a new piece to the board with the specified color.
+        Reference: None
+        """
     def set_piece(self, row, col, color):
-        """
-        Places a piece at a specified location on the board.
 
-        Adds a piece with the specified color to the board at the given row and column.
-
-        Args:
-            row (int): The row to place the piece in.
-            col (int): The column to place the piece in.
-            color (tuple): The color of the piece.
-        """
         self.pieces.append(Piece(row, col, color))
 
+
+
+        """
+        Function Name: get_pieces
+        Purpose: To retrieve all pieces of a given color on the board.
+        Parameters:
+            color (tuple), the color of the pieces to retrieve.
+        Return Value: A list of pieces matching the specified color.
+        Algorithm:
+            1) Filter and return all pieces of the specified color.
+        Reference: None
+        """
+
     def get_pieces(self, color):
-        """
-        Returns a list of all pieces of a given color on the board.
 
-        Filters and retrieves all pieces of the specified color.
-
-        Args:
-            color (tuple): The color of the pieces to retrieve.
-
-        Returns:
-            list: A list of pieces matching the specified color.
-        """
         return [piece for piece in self.pieces if piece.color == color]
