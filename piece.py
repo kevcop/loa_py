@@ -16,8 +16,11 @@ class Piece:
     Reference: None
     """
     def __init__(self, row, col, color):
+        # Assign the row where the piece is placed
         self.row = row
+        # Assign the column where the piece is placed
         self.col = col
+        # Assign the RGB color of the piece
         self.color = color
 
     """
@@ -34,6 +37,9 @@ class Piece:
     Reference: None
     """
     def draw(self, window, grid_size, offset=0):
+        # Calculate the radius of the piece based on the grid size
         radius = grid_size // 2 - 10
+        # Calculate the center of the piece based on the column, row, and grid size
         center = (self.col * grid_size + grid_size // 2 + offset, self.row * grid_size + grid_size // 2 + offset)
+        # Draw the piece as a circle on the game window using its color and position
         pygame.draw.circle(window, self.color, center, radius)

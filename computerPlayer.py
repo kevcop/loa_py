@@ -81,23 +81,27 @@ class ComputerPlayer:
         1) Generate horizontal, vertical, and diagonal moves based on game rules.
     Reference: None
     """
+
     def generate_moves_for_piece(self, start_row, start_col):
+        # Generate horizontal moves for the piece
         horizontal_moves_required = self.board.count_pieces_on_line(start_row, is_row=True)
         for offset in range(1, horizontal_moves_required + 1):
-            self.add_move_if_valid(start_row, start_col, start_row, start_col + offset)
-            self.add_move_if_valid(start_row, start_col, start_row, start_col - offset)
+            self.add_move_if_valid(start_row, start_col, start_row, start_col + offset)  # Right
+            self.add_move_if_valid(start_row, start_col, start_row, start_col - offset)  # Left
 
+        # Generate vertical moves for the piece
         vertical_moves_required = self.board.count_pieces_on_line(start_col, is_row=False)
         for offset in range(1, vertical_moves_required + 1):
-            self.add_move_if_valid(start_row, start_col, start_row + offset, start_col)
-            self.add_move_if_valid(start_row, start_col, start_row - offset, start_col)
+            self.add_move_if_valid(start_row, start_col, start_row + offset, start_col)  # Down
+            self.add_move_if_valid(start_row, start_col, start_row - offset, start_col)  # Up
 
+        # Generate diagonal moves for the piece
         diagonal_moves_required = self.board.count_diagonal_pieces(start_row, start_col, start_row, start_col)
         for offset in range(1, diagonal_moves_required + 1):
-            self.add_move_if_valid(start_row, start_col, start_row + offset, start_col + offset)
-            self.add_move_if_valid(start_row, start_col, start_row - offset, start_col - offset)
-            self.add_move_if_valid(start_row, start_col, start_row + offset, start_col - offset)
-            self.add_move_if_valid(start_row, start_col, start_row - offset, start_col + offset)
+            self.add_move_if_valid(start_row, start_col, start_row + offset, start_col + offset)  # Down-right
+            self.add_move_if_valid(start_row, start_col, start_row - offset, start_col - offset)  # Up-left
+            self.add_move_if_valid(start_row, start_col, start_row + offset, start_col - offset)  # Down-left
+            self.add_move_if_valid(start_row, start_col, start_row - offset, start_col + offset)  # Up-right
 
     """
     Function Name: add_move_if_valid
@@ -113,16 +117,22 @@ class ComputerPlayer:
         2) Add valid moves to either the possible or capture moves list.
     Reference: None
     """
+
     def add_move_if_valid(self, start_row, start_col, end_row, end_col):
+        # Check if the destination is within the bounds of the board
         if 0 <= end_row < self.board.rows and 0 <= end_col < self.board.cols:
+            # Validate the move
             is_valid, captures = self.validate_move(start_row, start_col, end_row, end_col)
             if is_valid:
+                # Store the valid move
                 move_details = {'start': (start_row, start_col), 'end': (end_row, end_col), 'captures': captures}
                 if captures:
-                    self.capture_moves.append(move_details)
+                    self.capture_moves.append(move_details)  # Add to capture moves list
                 else:
-                    self.possible_moves.append(move_details)
-                print(f"Valid move found: {self.proper_notation((start_col, start_row))} to {self.proper_notation((end_col, end_row))}")
+                    self.possible_moves.append(move_details)  # Add to possible moves list
+                # Output the move for debugging purposes
+                print(
+                    f"Valid move found: {self.proper_notation((start_col, start_row))} to {self.proper_notation((end_col, end_row))}")
 
     """
     Function Name: validate_move
@@ -138,21 +148,22 @@ class ComputerPlayer:
         2) Check if any opponent pieces are captured.
     Reference: None
     """
+
     def validate_move(self, start_row, start_col, end_row, end_col):
         captures = []
-        piece = self.board.get_piece(start_row, start_col)
+        piece = self.board.get_piece(start_row, start_col)  # Get the piece at the starting position
         if not piece or piece.color != self.color:
-            return False, captures
+            return False, captures  # Invalid move if the piece does not belong to the current player
 
-        is_valid, message = self.board.is_valid_move(piece, end_row, end_col)
+        is_valid, message = self.board.is_valid_move(piece, end_row, end_col)  # Check if the move is valid
         if is_valid:
+            # Check if there's a piece to capture at the destination
             target_piece = self.board.get_piece(end_row, end_col)
             if target_piece and target_piece.color != self.color:
-                captures.append((end_row, end_col))
-            return True, captures
+                captures.append((end_row, end_col))  # Add the captured piece to the list
+            return True, captures  # Return the valid move with captures (if any)
 
-        return False, captures
-
+        return False, captures  # Return invalid move
     """
     Function Name: select_and_execute_move
     Purpose: To select a move from the list of possible or capture moves and execute it on the board.
@@ -163,39 +174,45 @@ class ComputerPlayer:
         2) Execute the selected move and return the details.
     Reference: None
     """
+
     def select_and_execute_move(self):
+        # Return None if there are no possible or capture moves
         if not self.capture_moves and not self.possible_moves:
             print("No possible moves to select from.")
             return None
 
+        # Prioritize capture moves, otherwise select a random possible move
         if self.capture_moves:
             selected_move = random.choice(self.capture_moves)
         else:
             selected_move = random.choice(self.possible_moves)
 
-        start = selected_move['start']
-        end = selected_move['end']
-        start_notation = self.proper_notation((start[1], start[0]))
-        end_notation = self.proper_notation((end[1], end[0]))
+        start = selected_move['start']  # Get the start position of the selected move
+        end = selected_move['end']  # Get the end position of the selected move
+        start_notation = self.proper_notation((start[1], start[0]))  # Convert start position to notation
+        end_notation = self.proper_notation((end[1], end[0]))  # Convert end position to notation
 
-        piece = self.board.get_piece(start[0], start[1])
+        piece = self.board.get_piece(start[0], start[1])  # Get the piece at the start position
         print(f"Selected move: {start_notation} to {end_notation}")
 
+        # Execute the move if it's valid
         if piece and self.board.is_valid_move(piece, end[0], end[1])[0]:
+            # Handle any captures
             if selected_move['captures']:
                 for capture in selected_move['captures']:
                     captured_piece = self.board.get_piece(capture[0], capture[1])
                     if captured_piece:
-                        self.board.remove_piece(captured_piece)
+                        self.board.remove_piece(captured_piece)  # Remove the captured piece
                         print(f"Captured piece at {self.proper_notation((capture[1], capture[0]))}")
 
+            # Move the piece to the new position
             self.board.move_piece(piece, end[0], end[1])
             print(f"AI moved from {start_notation} to {end_notation}")
 
-            return start[0], start[1], end[0], end[1]
+            return start[0], start[1], end[0], end[1]  # Return the move details
         else:
             print(f"Failed to execute move: {start_notation} to {end_notation}")
-            return None
+            return None  # Return None if the move was invalid
 
     """
     Function Name: make_move
@@ -207,16 +224,17 @@ class ComputerPlayer:
         2) Select and execute a move.
     Reference: None
     """
+
     def make_move(self):
         print("AI is attempting to make a move...")
-        self.generate_all_possible_moves()
-        move = self.select_and_execute_move()
+        self.generate_all_possible_moves()  # Generate all possible moves
+        move = self.select_and_execute_move()  # Select and execute one of the moves
 
         if move is None:
-            print("AI could not find a valid move.")
+            print("AI could not find a valid move.")  # Output if no move was made
             return None
 
-        return move
+        return move  # Return the executed move details
 
     """
     Function Name: display_generated_moves
@@ -227,18 +245,21 @@ class ComputerPlayer:
         1) Print all possible moves and capture moves.
     Reference: None
     """
+
     def display_generated_moves(self):
         print("Displaying all generated moves:")
         if not self.possible_moves and not self.capture_moves:
             print("No moves were generated.")
             return
 
+        # Display all possible moves
         print("\nPossible Moves:")
         for move in self.possible_moves:
             start = self.proper_notation((move['start'][1], move['start'][0]))
             end = self.proper_notation((move['end'][1], move['end'][0]))
             print(f"Move from {start} to {end}")
 
+        # Display all capture moves
         print("\nCapture Moves:")
         for move in self.capture_moves:
             start = self.proper_notation((move['start'][1], move['start'][0]))
